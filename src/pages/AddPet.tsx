@@ -5,6 +5,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
 import { useAuth } from '../contexts/AuthContext';
+import { uploadImage, addPet } from '../services/petService';
 
 interface PetFormData {
   name: string;
@@ -32,7 +33,7 @@ const petTypes = [
 ];
 
 const popularBreeds = [
-  'Golden Retriever', 'German Shepherd', 'Labrador', 'Persian', 'Siamese', 
+  'Golden Retriever', 'German Shepherd', 'Labrador', 'Persian', 'Siamese',
   'Maine Coon', 'Bulldog', 'Poodle', 'Beagle', 'Rottweiler', 'Chihuahua',
   'British Shorthair', 'Ragdoll', 'Bengal', 'Parakeet', 'Canary', 'Goldfish',
   'Betta', 'Gecko', 'Python', 'Other'
@@ -101,14 +102,14 @@ export const AddPet: React.FC = () => {
     // Create previews
     const newPreviews = files.map(file => URL.createObjectURL(file));
     setImagePreviews(prev => [...prev, ...newPreviews]);
-    
+
     setErrors(prev => ({ ...prev, images: '' }));
   };
 
   const removeImage = (index: number) => {
     const newImages = formData.images.filter((_, i) => i !== index);
     const newPreviews = imagePreviews.filter((_, i) => i !== index);
-    
+
     setFormData(prev => ({ ...prev, images: newImages }));
     setImagePreviews(newPreviews);
   };
@@ -133,22 +134,42 @@ export const AddPet: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
 
     setIsSubmitting(true);
-    
+
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // In a real app, you would upload images and create the pet record
-      console.log('Pet data:', formData);
-      
+      // Upload images first
+      const imageUrls = await Promise.all(
+        formData.images.map(image => uploadImage(image))
+      );
+
+      // Prepare pet data
+      const petData = {
+        name: formData.name,
+        breed: formData.breed,
+        age: formData.age,
+        type: formData.type,
+        price: formData.price,
+        location: formData.location,
+        description: formData.description,
+        vaccinated: formData.vaccinated,
+        neutered: formData.neutered,
+        availableForMating: formData.availableForMating,
+        availableForSale: formData.availableForSale,
+        featured: formData.featured,
+        imageUrls: imageUrls
+      };
+
+      // Save to Firestore
+      await addPet(petData);
+
       // Show success message and redirect
       alert('Pet posted successfully!');
       navigate('/');
     } catch (error) {
+      console.error("Error posting pet:", error);
       setErrors({ general: 'Failed to post pet. Please try again.' });
     } finally {
       setIsSubmitting(false);
@@ -264,7 +285,7 @@ export const AddPet: React.FC = () => {
                     />
                     <span className="ml-2 text-sm text-gray-700">Available for Sale</span>
                   </label>
-                  
+
                   <label className="flex items-center">
                     <input
                       type="checkbox"
@@ -276,7 +297,7 @@ export const AddPet: React.FC = () => {
                     <span className="ml-2 text-sm text-gray-700">Available for Mating</span>
                   </label>
                 </div>
-                
+
                 {errors.availability && (
                   <p className="text-sm text-red-600">{errors.availability}</p>
                 )}
@@ -312,7 +333,7 @@ export const AddPet: React.FC = () => {
                   />
                   <span className="ml-2 text-sm text-gray-700">Vaccinated</span>
                 </label>
-                
+
                 <label className="flex items-center">
                   <input
                     type="checkbox"

@@ -12,6 +12,7 @@ export interface Pet {
   vaccinated: boolean;
   neutered: boolean;
   availableForMating: boolean;
+  availableForSale?: boolean;
   featured: boolean;
   weight?: number;
   color?: string;
@@ -42,6 +43,8 @@ export interface User {
   location: string;
   verified: boolean;
   joinedAt: string;
+  phone?: string;
+  bio?: string;
   rating?: number;
   reviewCount?: number;
   petsListed?: number;

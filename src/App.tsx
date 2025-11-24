@@ -23,7 +23,7 @@ function App() {
             <Route path="/signup" element={<Signup />} />
             <Route path="/*" element={
               <>
-                <Header onOpenDating={() => {}} />
+                <Header onOpenDating={() => { }} />
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/add-pet" element={<AddPet />} />

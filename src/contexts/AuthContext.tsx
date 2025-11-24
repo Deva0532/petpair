@@ -1,12 +1,12 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { User } from '../types';
+import { getUserProfile, updateUserProfile } from '../services/userService';
 
 interface AuthContextType {
   user: User | null;
   signup: (name: string, email: string, password: string, location: string) => Promise<boolean>;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
-  // NEW: Function to update profile data
   updateProfile: (profileData: Partial<User>) => Promise<boolean>;
   isLoading: boolean;
 }
@@ -28,26 +28,26 @@ interface AuthProviderProps {
 
 // Helper to decode JWT (kept here for context)
 const decodeToken = (token: string): User | null => {
-    try {
-      const payloadBase64 = token.split('.')[1];
-      const base64 = payloadBase64.replace(/-/g, '+').replace(/_/g, '/');
-      const decodedPayload = JSON.parse(atob(base64));
-      
-      return {
-        id: decodedPayload.userId,
-        name: decodedPayload.name || 'User',
-        email: decodedPayload.email,
-        location: decodedPayload.location || 'N/A',
-        phone: decodedPayload.phone || '', // Ensure phone is decoded
-        bio: decodedPayload.bio || '',     // Ensure bio is decoded
-        verified: decodedPayload.verified || true,
-        joinedAt: decodedPayload.joinedAt || new Date().toISOString(),
-      };
-    } catch (e) {
-      console.error("Failed to decode token:", e);
-      return null;
-    }
-  };
+  try {
+    const payloadBase64 = token.split('.')[1];
+    const base64 = payloadBase64.replace(/-/g, '+').replace(/_/g, '/');
+    const decodedPayload = JSON.parse(atob(base64));
+
+    return {
+      id: decodedPayload.userId,
+      name: decodedPayload.name || 'User',
+      email: decodedPayload.email,
+      location: decodedPayload.location || 'N/A',
+      phone: decodedPayload.phone || '',
+      bio: decodedPayload.bio || '',
+      verified: decodedPayload.verified || true,
+      joinedAt: decodedPayload.joinedAt || new Date().toISOString(),
+    };
+  } catch (e) {
+    console.error("Failed to decode token:", e);
+    return null;
+  }
+};
 
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
@@ -67,7 +67,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, []);
 
-  // ... (Login and Signup functions remain the same) ...
+  // --- UPDATED: PROFILE SYNC ---
+  // Fetch additional profile data from Firestore when user is set
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (user?.id) {
+        const profile = await getUserProfile(user.id);
+        if (profile) {
+          setUser(prev => prev ? { ...prev, ...profile } : null);
+        }
+      }
+    };
+    fetchProfile();
+  }, [user?.id]);
+
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
     try {
@@ -105,7 +118,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password, location }),
       });
-      
+
       const data = await response.json();
       if (response.ok) {
         localStorage.setItem('token', data.token);
@@ -126,45 +139,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-
-  // --- NEW: PROFILE UPDATE FUNCTION ---
+  // --- UPDATED: PROFILE UPDATE FUNCTION ---
   const updateProfile = async (profileData: Partial<User>): Promise<boolean> => {
-    if (!user) return false;
+    if (!user?.id) return false;
     setIsLoading(true);
-    const token = localStorage.getItem('token');
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/profile`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`, // Send the JWT for authentication
-        },
-        body: JSON.stringify(profileData),
-      });
+      // Update Firestore
+      await updateUserProfile(user.id, profileData);
 
-      const data = await response.json();
-
-      if (response.ok) {
-        // Backend returns a new token with updated data
-        localStorage.setItem('token', data.token);
-        const decodedUser = decodeToken(data.token);
-        
-        // Update the global state with the new user data
-        setUser(decodedUser); 
-        return true;
-      } else {
-        console.error("Profile update failed:", data.message);
-        return false;
-      }
+      // Update local state immediately
+      setUser(prev => prev ? { ...prev, ...profileData } : null);
+      return true;
     } catch (err) {
-      console.error('Network error during profile update:', err);
+      console.error('Error updating profile:', err);
       return false;
     } finally {
       setIsLoading(false);
     }
   };
-  // ------------------------------------
 
   const logout = () => {
     localStorage.removeItem('token');
@@ -176,7 +169,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     signup,
     logout,
-    updateProfile, // Include the new function
+    updateProfile,
     isLoading
   };
 

@@ -1,14 +1,17 @@
-import React, { useState } from 'react';
-import { 
-  GlobeAltIcon, 
-  BellIcon, 
+import React, { useState, useEffect } from 'react';
+import {
+  GlobeAltIcon,
+  BellIcon,
   EyeIcon,
-  AdjustmentsHorizontalIcon 
+  AdjustmentsHorizontalIcon
 } from '@heroicons/react/24/outline';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
+import { useAuth } from '../../contexts/AuthContext';
+import { getUserPreferences, updateUserPreferences } from '../../services/userService';
 
 export const PreferencesTab: React.FC = () => {
+  const { user } = useAuth();
   const [preferences, setPreferences] = useState({
     // Notification Preferences
     receiveMarketingEmails: true,
@@ -36,26 +39,33 @@ export const PreferencesTab: React.FC = () => {
     vibration: true,
   });
 
+  // Fetch preferences on mount
+  useEffect(() => {
+    const fetchPreferences = async () => {
+      if (user?.id) {
+        const prefs = await getUserPreferences(user.id);
+        if (prefs) {
+          setPreferences(prev => ({ ...prev, ...prefs }));
+        }
+      }
+    };
+    fetchPreferences();
+  }, [user?.id]);
+
   const updatePreference = (key: string, value: any) => {
     setPreferences(prev => ({ ...prev, [key]: value }));
   };
 
-  const updateRangePreference = (key: string, rangeKey: string, value: number) => {
-    setPreferences(prev => ({
-      ...prev,
-      [key]: { ...prev[key as keyof typeof prev], [rangeKey]: value }
-    }));
-  };
-
-  const handleSave = () => {
-    // Save preferences logic here
-    console.log('Saving preferences:', preferences);
+  const handleSave = async () => {
+    if (user?.id) {
+      await updateUserPreferences(user.id, preferences);
+      alert('Preferences saved successfully!');
+    }
   };
 
   const handleReset = () => {
     // Reset to default preferences
     setPreferences({
-      // Notification Preferences
       receiveMarketingEmails: true,
       showRecommendations: true,
       emailNotifications: true,
@@ -90,7 +100,7 @@ export const PreferencesTab: React.FC = () => {
           <BellIcon className="w-6 h-6 text-violet-600" />
           <h2 className="text-xl font-semibold text-gray-900">Notification Preferences</h2>
         </div>
-        
+
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
@@ -196,7 +206,7 @@ export const PreferencesTab: React.FC = () => {
           <EyeIcon className="w-6 h-6 text-violet-600" />
           <h2 className="text-xl font-semibold text-gray-900">Privacy Settings</h2>
         </div>
-        
+
         <div className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -333,7 +343,7 @@ export const PreferencesTab: React.FC = () => {
           <AdjustmentsHorizontalIcon className="w-6 h-6 text-violet-600" />
           <h2 className="text-xl font-semibold text-gray-900">Display & Accessibility</h2>
         </div>
-        
+
         <div className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">

@@ -1,12 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { PlusIcon, EyeIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
-import { mockPets } from '../../data/mockData';
+import { getPets } from '../../services/petService';
+import { useAuth } from '../../contexts/AuthContext';
+import { Pet } from '../../types';
 
 export const MyPetsTab: React.FC = () => {
-  const [pets] = useState(mockPets.slice(0, 6)); // Show first 6 pets as user's pets
+  const { user } = useAuth();
+  const [pets, setPets] = useState<Pet[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUserPets = async () => {
+      if (!user) return;
+      try {
+        const allPets = await getPets();
+        // Filter pets where owner.id matches current user.id
+        // Note: getPets maps backend _id to id, and ownerId to owner.id
+        const userPets = allPets.filter(pet => pet.owner?.id === user.id);
+        setPets(userPets);
+      } catch (error) {
+        console.error("Failed to fetch user pets", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserPets();
+  }, [user]);
+
+  if (loading) {
+    return <div className="text-center py-8">Loading your pets...</div>;
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -26,19 +53,19 @@ export const MyPetsTab: React.FC = () => {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <Card className="p-6 bg-gradient-to-br from-violet-50 to-purple-50 border-violet-100">
-          <div className="text-2xl font-bold text-violet-600">24</div>
+          <div className="text-2xl font-bold text-violet-600">{pets.length}</div>
           <div className="text-gray-600 text-sm">Total Pets</div>
         </Card>
         <Card className="p-6 bg-gradient-to-br from-emerald-50 to-green-50 border-emerald-100">
-          <div className="text-2xl font-bold text-emerald-600">18</div>
+          <div className="text-2xl font-bold text-emerald-600">{pets.filter(p => !p.availableForSale).length}</div>
           <div className="text-gray-600 text-sm">Active Listings</div>
         </Card>
         <Card className="p-6 bg-gradient-to-br from-amber-50 to-orange-50 border-amber-100">
-          <div className="text-2xl font-bold text-amber-600">6</div>
+          <div className="text-2xl font-bold text-amber-600">0</div>
           <div className="text-gray-600 text-sm">Sold</div>
         </Card>
         <Card className="p-6 bg-gradient-to-br from-rose-50 to-pink-50 border-rose-100">
-          <div className="text-2xl font-bold text-rose-600">1,247</div>
+          <div className="text-2xl font-bold text-rose-600">0</div>
           <div className="text-gray-600 text-sm">Total Views</div>
         </Card>
       </div>
@@ -62,28 +89,28 @@ export const MyPetsTab: React.FC = () => {
                 Active
               </div>
             </div>
-            
+
             <div className="p-6">
               <div className="flex items-start justify-between mb-2">
                 <h3 className="text-lg font-semibold text-gray-900">{pet.name}</h3>
                 <span className="text-lg font-bold text-violet-600">${pet.price}</span>
               </div>
-              
+
               <p className="text-sm text-gray-600 mb-2">
                 {pet.breed} • {pet.age} year{pet.age !== 1 ? 's' : ''} old
               </p>
-              
+
               <p className="text-sm text-gray-700 mb-4 line-clamp-2">
                 {pet.description}
               </p>
 
               {/* Stats */}
               <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                <span>👁 247 views</span>
-                <span>💬 12 inquiries</span>
-                <span>❤️ 18 favorites</span>
+                <span>👁 0 views</span>
+                <span>💬 0 inquiries</span>
+                <span>❤️ 0 favorites</span>
               </div>
-              
+
               {/* Action Buttons */}
               <div className="flex space-x-2">
                 <Link to={`/pet/${pet.id}`} className="flex-1">
