@@ -3,24 +3,23 @@ export interface Pet {
   name: string;
   breed: string;
   age: number;
-  price: number;
   type: 'dog' | 'cat' | 'bird' | 'fish' | 'reptile' | 'other';
+  price: number;
   location: string;
   image: string;
+  imageUrls?: string[];
   description: string;
   owner: User;
   vaccinated: boolean;
   neutered: boolean;
   availableForMating: boolean;
-  availableForSale?: boolean;
+  availableForSale: boolean;
   featured: boolean;
   weight?: number;
-  color?: string;
   personality?: string[];
   careRequirements?: {
     exercise: string;
     space: string;
-    grooming: string;
   };
   healthRecords?: HealthRecord[];
   medicalNotes?: string;

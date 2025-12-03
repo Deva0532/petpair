@@ -195,6 +195,13 @@ const petSchema = new mongoose.Schema({
   availableForSale: { type: Boolean, default: true },
   featured: { type: Boolean, default: false },
   imageUrls: [{ type: String }],
+  weight: { type: Number },
+  personality: [{ type: String }],
+  careRequirements: {
+    exercise: { type: String },
+    space: { type: String }
+  },
+  medicalNotes: { type: String },
   ownerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   createdAt: { type: Date, default: Date.now }
 });
@@ -233,6 +240,22 @@ app.get('/api/pets', async (req, res) => {
     res.json(pets);
   } catch (error) {
     res.status(500).json({ message: 'Server error fetching pets' });
+  }
+});
+
+app.get('/api/pets/:id', async (req, res) => {
+  try {
+    const pet = await Pet.findById(req.params.id).populate('ownerId', 'name email location phone bio');
+    if (!pet) {
+      return res.status(404).json({ message: 'Pet not found' });
+    }
+    res.json(pet);
+  } catch (error) {
+    console.error('Error fetching pet:', error);
+    if (error.kind === 'ObjectId') {
+      return res.status(404).json({ message: 'Pet not found' });
+    }
+    res.status(500).json({ message: 'Server error fetching pet details' });
   }
 });
 

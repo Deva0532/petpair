@@ -21,6 +21,13 @@ interface PetFormData {
   availableForSale: boolean;
   featured: boolean;
   images: File[];
+  weight: number;
+  personality: string[];
+  careRequirements: {
+    exercise: string;
+    space: string;
+  };
+  medicalNotes: string;
 }
 
 const petTypes = [
@@ -32,12 +39,14 @@ const petTypes = [
   { value: 'other', label: 'Other' }
 ];
 
-const popularBreeds = [
-  'Golden Retriever', 'German Shepherd', 'Labrador', 'Persian', 'Siamese',
-  'Maine Coon', 'Bulldog', 'Poodle', 'Beagle', 'Rottweiler', 'Chihuahua',
-  'British Shorthair', 'Ragdoll', 'Bengal', 'Parakeet', 'Canary', 'Goldfish',
-  'Betta', 'Gecko', 'Python', 'Other'
-];
+const breedsByType: Record<string, string[]> = {
+  dog: ['Golden Retriever', 'German Shepherd', 'Labrador', 'Bulldog', 'Poodle', 'Beagle', 'Rottweiler', 'Chihuahua', 'Husky', 'Boxer', 'Other'],
+  cat: ['Persian', 'Siamese', 'Maine Coon', 'British Shorthair', 'Ragdoll', 'Bengal', 'Sphynx', 'Scottish Fold', 'Other'],
+  bird: ['Parakeet', 'Canary', 'Cockatiel', 'Parrot', 'Finch', 'Lovebird', 'Other'],
+  fish: ['Goldfish', 'Betta', 'Guppy', 'Tetra', 'Angelfish', 'Other'],
+  reptile: ['Gecko', 'Python', 'Turtle', 'Iguana', 'Chameleon', 'Other'],
+  other: ['Other']
+};
 
 export const AddPet: React.FC = () => {
   const { user } = useAuth();
@@ -56,11 +65,19 @@ export const AddPet: React.FC = () => {
     availableForMating: false,
     availableForSale: true,
     featured: false,
-    images: []
+    images: [],
+    weight: 0,
+    personality: [],
+    careRequirements: {
+      exercise: '',
+      space: ''
+    },
+    medicalNotes: ''
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [newPersonalityTrait, setNewPersonalityTrait] = useState('');
 
   if (!user) {
     return (
@@ -78,15 +95,43 @@ export const AddPet: React.FC = () => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
 
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : type === 'number' ? Number(value) : value
-    }));
+    if (name.startsWith('care.')) {
+      const field = name.split('.')[1];
+      setFormData(prev => ({
+        ...prev,
+        careRequirements: {
+          ...prev.careRequirements,
+          [field]: value
+        }
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: type === 'checkbox' ? checked : type === 'number' ? Number(value) : value
+      }));
+    }
 
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
+  };
+
+  const handleAddPersonalityTrait = () => {
+    if (newPersonalityTrait.trim() && !formData.personality.includes(newPersonalityTrait.trim())) {
+      setFormData(prev => ({
+        ...prev,
+        personality: [...prev.personality, newPersonalityTrait.trim()]
+      }));
+      setNewPersonalityTrait('');
+    }
+  };
+
+  const removePersonalityTrait = (trait: string) => {
+    setFormData(prev => ({
+      ...prev,
+      personality: prev.personality.filter(t => t !== trait)
+    }));
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -145,6 +190,10 @@ export const AddPet: React.FC = () => {
         formData.images.map(image => uploadImage(image))
       );
 
+      if (imageUrls.length === 0) {
+        imageUrls.push('https://images.unsplash.com/photo-1552053831-71594a27632d?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60');
+      }
+
       // Prepare pet data
       const petData = {
         name: formData.name,
@@ -159,7 +208,11 @@ export const AddPet: React.FC = () => {
         availableForMating: formData.availableForMating,
         availableForSale: formData.availableForSale,
         featured: formData.featured,
-        imageUrls: imageUrls
+        imageUrls: imageUrls,
+        weight: formData.weight,
+        personality: formData.personality,
+        careRequirements: formData.careRequirements,
+        medicalNotes: formData.medicalNotes
       };
 
       // Save to Firestore
@@ -238,7 +291,7 @@ export const AddPet: React.FC = () => {
                     className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
                   >
                     <option value="">Select breed</option>
-                    {popularBreeds.map(breed => (
+                    {(breedsByType[formData.type] || ['Other']).map(breed => (
                       <option key={breed} value={breed}>
                         {breed}
                       </option>
@@ -260,12 +313,74 @@ export const AddPet: React.FC = () => {
                 />
 
                 <Input
+                  label="Weight (lbs)"
+                  name="weight"
+                  type="number"
+                  min="0"
+                  value={formData.weight}
+                  onChange={handleInputChange}
+                  placeholder="Enter weight"
+                />
+
+                <Input
                   label="Location"
                   name="location"
                   value={formData.location}
                   onChange={handleInputChange}
                   error={errors.location}
                   placeholder="City, State"
+                />
+              </div>
+            </div>
+
+            {/* Personality Traits */}
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Personality</h2>
+              <div className="flex gap-2 mb-4">
+                <Input
+                  name="newTrait"
+                  value={newPersonalityTrait}
+                  onChange={(e) => setNewPersonalityTrait(e.target.value)}
+                  placeholder="Add a personality trait (e.g. Friendly, Playful)"
+                  className="flex-1"
+                />
+                <Button type="button" onClick={handleAddPersonalityTrait} variant="outline">
+                  Add
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {formData.personality.map(trait => (
+                  <span key={trait} className="px-3 py-1 bg-violet-100 text-violet-800 rounded-full text-sm flex items-center">
+                    {trait}
+                    <button
+                      type="button"
+                      onClick={() => removePersonalityTrait(trait)}
+                      className="ml-2 text-violet-600 hover:text-violet-800"
+                    >
+                      <XMarkIcon className="w-4 h-4" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Care Requirements */}
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Care Requirements</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Input
+                  label="Exercise Needs"
+                  name="care.exercise"
+                  value={formData.careRequirements.exercise}
+                  onChange={handleInputChange}
+                  placeholder="e.g. 2 hours daily"
+                />
+                <Input
+                  label="Space Requirements"
+                  name="care.space"
+                  value={formData.careRequirements.space}
+                  onChange={handleInputChange}
+                  placeholder="e.g. Large yard"
                 />
               </div>
             </div>
@@ -322,28 +437,44 @@ export const AddPet: React.FC = () => {
             {/* Health Information */}
             <div>
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Health Information</h2>
-              <div className="space-y-3">
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    name="vaccinated"
-                    checked={formData.vaccinated}
-                    onChange={handleInputChange}
-                    className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
-                  />
-                  <span className="ml-2 text-sm text-gray-700">Vaccinated</span>
-                </label>
+              <div className="space-y-4">
+                <div className="flex space-x-6">
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      name="vaccinated"
+                      checked={formData.vaccinated}
+                      onChange={handleInputChange}
+                      className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">Vaccinated</span>
+                  </label>
 
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    name="neutered"
-                    checked={formData.neutered}
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      name="neutered"
+                      checked={formData.neutered}
+                      onChange={handleInputChange}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">Spayed/Neutered</span>
+                  </label>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Medical Notes
+                  </label>
+                  <textarea
+                    name="medicalNotes"
+                    value={formData.medicalNotes}
                     onChange={handleInputChange}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    rows={2}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                    placeholder="Any known allergies or medical conditions..."
                   />
-                  <span className="ml-2 text-sm text-gray-700">Spayed/Neutered</span>
-                </label>
+                </div>
               </div>
             </div>
 
