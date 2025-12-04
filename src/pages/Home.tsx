@@ -54,8 +54,6 @@ export const Home: React.FC = () => {
     const fetchPets = async () => {
       try {
         const fetchedPets = await getPets();
-        // Merge fetched pets with mock pets for demo purposes, or just use fetched.
-        // Putting fetched pets first so they appear at the top.
         setPets([...fetchedPets, ...mockPets]);
       } catch (error) {
         console.error("Failed to fetch pets", error);
@@ -68,42 +66,22 @@ export const Home: React.FC = () => {
   }, []);
 
   const filteredPets = pets.filter(pet => {
-    // Tab filter
     if (activeTab === 'dating' && !pet.availableForMating) return false;
     if (activeTab === 'sell' && pet.availableForMating && !pet.price) return false;
-
-    // Type filter
     if (filters.type !== 'all' && pet.type !== filters.type) return false;
-
-    // Breed filter
     if (filters.breed && pet.breed !== filters.breed) return false;
-
-    // Size Preference filter
     if (filters.sizePreference && filters.sizePreference !== 'any' && pet.size !== filters.sizePreference) return false;
-
-    // Activity Level filter
     if (filters.activityLevel && filters.activityLevel !== 'any' && pet.activityLevel !== filters.activityLevel) return false;
-
-    // Age filter
     if (pet.age < filters.minAge || pet.age > filters.maxAge) return false;
-
-    // Price filter (only for sell tab)
     if (activeTab === 'sell' && (pet.price < filters.minPrice || pet.price > filters.maxPrice)) return false;
-
-    // Location filter
     if (filters.location && !pet.location.toLowerCase().includes(filters.location.toLowerCase())) return false;
-
-    // Additional filters
     if (filters.vaccinated !== undefined && pet.vaccinated !== filters.vaccinated) return false;
     if (filters.availableForMating !== undefined && pet.availableForMating !== filters.availableForMating) return false;
-
-    // Pet Characteristics filters
     if (filters.goodWithKids !== undefined && pet.goodWithKids !== filters.goodWithKids) return false;
     if (filters.goodWithPets !== undefined && pet.goodWithPets !== filters.goodWithPets) return false;
     if (filters.houseTrained !== undefined && pet.houseTrained !== filters.houseTrained) return false;
     if (filters.spayedNeutered !== undefined && pet.spayedNeutered !== filters.spayedNeutered) return false;
     if (filters.specialNeeds !== undefined && pet.specialNeeds !== filters.specialNeeds) return false;
-
     return true;
   });
 
@@ -136,8 +114,8 @@ export const Home: React.FC = () => {
               <button
                 onClick={() => setActiveTab('sell')}
                 className={`px-8 py-3 rounded-full font-semibold transition-all duration-300 ${activeTab === 'sell'
-                    ? 'bg-white text-violet-600 shadow-lg'
-                    : 'text-white hover:bg-white/10'
+                  ? 'bg-white text-violet-600 shadow-lg'
+                  : 'text-white hover:bg-white/10'
                   }`}
               >
                 🏪 Buy & Sell
@@ -145,8 +123,8 @@ export const Home: React.FC = () => {
               <button
                 onClick={() => setActiveTab('dating')}
                 className={`px-8 py-3 rounded-full font-semibold transition-all duration-300 ${activeTab === 'dating'
-                    ? 'bg-white text-rose-600 shadow-lg'
-                    : 'text-white hover:bg-white/10'
+                  ? 'bg-white text-rose-600 shadow-lg'
+                  : 'text-white hover:bg-white/10'
                   }`}
               >
                 💕 Pet Dating
@@ -159,13 +137,15 @@ export const Home: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div id="pets-section">
           <div className="flex flex-col lg:flex-row gap-8">
-            {/* Filters Sidebar */}
+            {/* Filters Sidebar - Sticky */}
             <div className="lg:w-1/4">
-              <PetFilters
-                filters={filters}
-                onFiltersChange={setFilters}
-                activeTab={activeTab}
-              />
+              <div className="lg:sticky lg:top-20 lg:max-h-[calc(100vh-100px)] lg:overflow-y-auto scrollbar-thin scrollbar-thumb-violet-200 scrollbar-track-transparent">
+                <PetFilters
+                  filters={filters}
+                  onFiltersChange={setFilters}
+                  activeTab={activeTab}
+                />
+              </div>
             </div>
 
             {/* Main Content */}
@@ -215,7 +195,8 @@ export const Home: React.FC = () => {
 
               {loading ? (
                 <div className="text-center py-12">
-                  <p className="text-gray-500">Loading pets...</p>
+                  <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-violet-200 border-t-violet-600"></div>
+                  <p className="text-gray-500 mt-4">Loading pets...</p>
                 </div>
               ) : (
                 <>
@@ -223,7 +204,7 @@ export const Home: React.FC = () => {
                   {featuredPets.length > 0 && (
                     <div className="mb-12">
                       <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-                        Club {activeTab === 'sell' ? 'Pets' : 'Partners'}
+                        ⭐ Club {activeTab === 'sell' ? 'Pets' : 'Partners'}
                       </h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                         {featuredPets.map(pet => (
@@ -262,8 +243,8 @@ export const Home: React.FC = () => {
                   {filteredPets.length === 0 && (
                     <div className="text-center py-16">
                       <div className="text-gray-400 mb-4">
-                        <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                        <svg className="mx-auto h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                         </svg>
                       </div>
                       <h3 className="text-lg font-semibold text-gray-900 mb-2">

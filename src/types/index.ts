@@ -13,8 +13,8 @@ export interface Pet {
   vaccinated: boolean;
   neutered: boolean;
   availableForMating: boolean;
-  availableForSale: boolean;
-  featured: boolean;
+  availableForSale?: boolean;
+  featured?: boolean;
   weight?: number;
   personality?: string[];
   careRequirements?: {
@@ -23,6 +23,14 @@ export interface Pet {
   };
   healthRecords?: HealthRecord[];
   medicalNotes?: string;
+  size?: 'small' | 'medium' | 'large' | 'extra-large';
+  activityLevel?: 'low' | 'moderate' | 'high';
+  goodWithKids?: boolean;
+  goodWithPets?: boolean;
+  houseTrained?: boolean;
+  spayedNeutered?: boolean;
+  specialNeeds?: boolean;
+  status?: 'active' | 'sold' | 'deleted';
 }
 
 export interface HealthRecord {
@@ -79,4 +87,10 @@ export interface ChatRoom {
   participants: User[];
   lastMessage?: Message;
   unreadCount: number;
+}
+
+export interface WishlistItem {
+  id: string;
+  pet: Pet | null;
+  addedAt: string;
 }

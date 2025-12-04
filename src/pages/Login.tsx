@@ -126,7 +126,7 @@ export const Login: React.FC = () => {
           <div className="mt-6 p-4 bg-gray-50 rounded-lg">
             <p className="text-sm text-gray-700 text-center">
               <strong>Demo Account:</strong><br />
-              Email: demo@petpair.com<br />
+              Email: demo@peto.com<br />
               Password: demo123
             </p>
           </div>

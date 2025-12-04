@@ -47,7 +47,7 @@ export const Signup: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
 
     const success = await signup(formData.name, formData.email, formData.password, formData.location);
@@ -66,7 +66,7 @@ export const Signup: React.FC = () => {
           <div className="text-center mb-8">
             <Link to="/" className="inline-flex items-center space-x-2">
               <HeartSolidIcon className="w-10 h-10 text-blue-600" />
-              <span className="text-2xl font-bold text-gray-900">PetPair</span>
+              <span className="text-2xl font-bold text-gray-900">Peto</span>
             </Link>
             <p className="text-gray-600 mt-2">Create your account</p>
           </div>

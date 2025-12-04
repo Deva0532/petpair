@@ -154,7 +154,7 @@ export const PetDetails: React.FC = () => {
         if (navigator.share) {
             navigator.share({
                 title: `${pet.name} - ${pet.breed}`,
-                text: `Check out ${pet.name}, a beautiful ${pet.breed} available on PetPair!`,
+                text: `Check out ${pet.name}, a beautiful ${pet.breed} available on Peto!`,
                 url: window.location.href
             });
         } else {

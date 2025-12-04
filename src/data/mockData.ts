@@ -44,7 +44,14 @@ export const mockPets: Pet[] = [
     vaccinated: true,
     neutered: false,
     availableForMating: true,
-    featured: true
+    featured: true,
+    size: 'large',
+    activityLevel: 'high',
+    goodWithKids: true,
+    goodWithPets: true,
+    houseTrained: true,
+    spayedNeutered: false,
+    specialNeeds: false
   },
   {
     id: '2',
@@ -60,7 +67,14 @@ export const mockPets: Pet[] = [
     vaccinated: true,
     neutered: true,
     availableForMating: false,
-    featured: true
+    featured: true,
+    size: 'large',
+    activityLevel: 'high',
+    goodWithKids: true,
+    goodWithPets: false,
+    houseTrained: true,
+    spayedNeutered: true,
+    specialNeeds: false
   },
   {
     id: '3',
@@ -76,7 +90,14 @@ export const mockPets: Pet[] = [
     vaccinated: true,
     neutered: false,
     availableForMating: true,
-    featured: false
+    featured: false,
+    size: 'small',
+    activityLevel: 'low',
+    goodWithKids: true,
+    goodWithPets: true,
+    houseTrained: false,
+    spayedNeutered: false,
+    specialNeeds: false
   },
   {
     id: '4',
@@ -92,7 +113,14 @@ export const mockPets: Pet[] = [
     vaccinated: true,
     neutered: false,
     availableForMating: true,
-    featured: false
+    featured: false,
+    size: 'large',
+    activityLevel: 'high',
+    goodWithKids: true,
+    goodWithPets: true,
+    houseTrained: true,
+    spayedNeutered: false,
+    specialNeeds: false
   },
   {
     id: '5',
@@ -108,7 +136,14 @@ export const mockPets: Pet[] = [
     vaccinated: true,
     neutered: true,
     availableForMating: false,
-    featured: true
+    featured: true,
+    size: 'small',
+    activityLevel: 'moderate',
+    goodWithKids: false,
+    goodWithPets: false,
+    houseTrained: true,
+    spayedNeutered: true,
+    specialNeeds: false
   },
   {
     id: '6',
@@ -124,7 +159,14 @@ export const mockPets: Pet[] = [
     vaccinated: true,
     neutered: true,
     availableForMating: false,
-    featured: false
+    featured: false,
+    size: 'medium',
+    activityLevel: 'low',
+    goodWithKids: true,
+    goodWithPets: true,
+    houseTrained: true,
+    spayedNeutered: true,
+    specialNeeds: true
   }
 ];
 

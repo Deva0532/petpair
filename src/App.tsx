@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { Header } from './components/layout/Header';
@@ -7,13 +7,12 @@ import { Login } from './pages/Login';
 import { Signup } from './pages/Signup';
 import { Vets } from './pages/Vets';
 import { Messages } from './pages/Messages';
-import { Profile } from './pages/Profile';
 import { AddPet } from './pages/AddPet';
 import { PetDetails } from './pages/PetDetails';
 import { UserProfile } from './pages/UserProfile';
+import { Wishlist } from './pages/Wishlist';
 
 function App() {
-
   return (
     <AuthProvider>
       <Router>
@@ -23,7 +22,7 @@ function App() {
             <Route path="/signup" element={<Signup />} />
             <Route path="/*" element={
               <>
-                <Header onOpenDating={() => { }} />
+                <Header />
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/add-pet" element={<AddPet />} />
@@ -31,6 +30,7 @@ function App() {
                   <Route path="/vets" element={<Vets />} />
                   <Route path="/messages" element={<Messages />} />
                   <Route path="/profile" element={<UserProfile />} />
+                  <Route path="/wishlist" element={<Wishlist />} />
                 </Routes>
               </>
             } />
