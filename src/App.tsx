@@ -7,6 +7,7 @@ import { Header } from './components/layout/Header';
 import { Home } from './pages/Home';
 import { Login } from './pages/Login';
 import { Signup } from './pages/Signup';
+import { ForgotPassword } from './pages/ForgotPassword';
 import { Vets } from './pages/Vets';
 import { Messages } from './pages/Messages';
 import { AddPet } from './pages/AddPet';
@@ -26,6 +27,7 @@ function App() {
               <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/*" element={
                   <>
                     <Header />

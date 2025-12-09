@@ -12,10 +12,12 @@ export const Signup: React.FC = () => {
     password: '',
     confirmPassword: '',
     location: '',
-    agreeToTerms: false
+    agreeToTerms: false,
+    otp: ''
   });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [otpSent, setOtpSent] = useState(false);
   const { signup, loginWithGoogle, isLoading } = useAuth();
   const navigate = useNavigate();
 
@@ -33,19 +35,55 @@ export const Signup: React.FC = () => {
     if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
     if (!formData.location.trim()) newErrors.location = 'Location is required';
     if (!formData.agreeToTerms) newErrors.agreeToTerms = 'You must agree to the terms';
+    if (otpSent && !formData.otp.trim()) newErrors.otp = 'OTP is required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSendOtp = async () => {
+    // Basic validation before sending OTP
+    const newErrors: Record<string, string> = {};
+    if (!formData.name.trim()) newErrors.name = 'Name is required';
+    if (!formData.email.trim()) newErrors.email = 'Email is required';
+    if (!formData.password) newErrors.password = 'Password is required';
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/send-verification-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setOtpSent(true);
+        setErrors({}); // clear errors
+      } else {
+        setErrors({ general: data.message || 'Failed to send OTP' });
+      }
+    } catch (error) {
+      setErrors({ general: 'Failed to send OTP. Please try again.' });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
 
-    const success = await signup(formData.name, formData.email, formData.password, formData.location);
+    if (!otpSent) {
+      await handleSendOtp();
+      return;
+    }
+
+    const success = await signup(formData.name, formData.email, formData.password, formData.location, formData.otp);
     if (success) {
       navigate('/');
     } else {
-      setErrors({ general: 'Failed to create account. Please try again.' });
+      setErrors({ general: 'Failed to create account. Please check OTP and try again.' });
     }
   };
 
@@ -236,13 +274,40 @@ export const Signup: React.FC = () => {
               {errors.agreeToTerms && <p className="mt-1 text-xs text-red-600">{errors.agreeToTerms}</p>}
             </div>
 
-            <Button
-              type="submit"
-              className="w-full py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 rounded-xl text-white font-semibold shadow-lg shadow-violet-500/30"
-              disabled={isLoading}
-            >
-              {isLoading ? 'Creating account...' : 'Create Account'}
-            </Button>
+            {otpSent && (
+              <div>
+                <div className="relative">
+                  <input
+                    type="text"
+                    name="otp"
+                    value={formData.otp}
+                    onChange={handleChange}
+                    className={`w-full px-4 py-3 rounded-xl border ${errors.otp ? 'border-red-300' : 'border-gray-200'} focus:ring-2 focus:ring-violet-500 focus:border-transparent bg-gray-50/50 text-center tracking-widest`}
+                    placeholder="Enter 6-digit OTP"
+                  />
+                </div>
+                {errors.otp && <p className="mt-1 text-xs text-red-600">{errors.otp}</p>}
+              </div>
+            )}
+
+            {!otpSent ? (
+              <Button
+                type="button"
+                onClick={handleSendOtp}
+                className="w-full py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 rounded-xl text-white font-semibold shadow-lg shadow-violet-500/30"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Sending OTP...' : 'Verify Email & Send OTP'}
+              </Button>
+            ) : (
+              <Button
+                type="submit"
+                className="w-full py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 rounded-xl text-white font-semibold shadow-lg shadow-violet-500/30"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Creating account...' : 'Create Account'}
+              </Button>
+            )}
           </form>
 
           <div className="mt-6 text-center">

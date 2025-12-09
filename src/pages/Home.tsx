@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PetCard } from '../components/pets/PetCard';
 import { PetFilters } from '../components/pets/PetFilters';
-import { mockPets } from '../data/mockData';
 import { Pet } from '../types';
 import { getPets, getWishlist, addToWishlist, removeFromWishlist } from '../services/petService';
 import { useAuth } from '../contexts/AuthContext';
@@ -61,10 +60,10 @@ export const Home: React.FC = () => {
     const fetchPets = async () => {
       try {
         const fetchedPets = await getPets();
-        setPets([...fetchedPets, ...mockPets]);
+        setPets(fetchedPets);
       } catch (error) {
         console.error("Failed to fetch pets", error);
-        setPets(mockPets);
+        setPets([]);
       } finally {
         setLoading(false);
       }
@@ -90,6 +89,9 @@ export const Home: React.FC = () => {
   }, [user]);
 
   const filteredPets = pets.filter(pet => {
+    // If logged in, filter out own pets
+    if (user && pet.owner && (pet.owner.id === user.id || (pet.owner as any)._id === user.id)) return false;
+
     if (activeTab === 'dating' && !pet.availableForMating) return false;
     if (activeTab === 'sell' && pet.availableForMating && !pet.price) return false;
     if (filters.type !== 'all' && pet.type !== filters.type) return false;

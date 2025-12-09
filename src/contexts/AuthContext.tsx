@@ -4,7 +4,7 @@ import { getUserProfile, updateUserProfile } from '../services/userService';
 
 interface AuthContextType {
   user: User | null;
-  signup: (name: string, email: string, password: string, location: string) => Promise<boolean>;
+  signup: (name: string, email: string, password: string, location: string, otp?: string) => Promise<boolean>;
   login: (email: string, password: string) => Promise<boolean>;
   loginWithGoogle: (credential: string) => Promise<boolean>;
   logout: () => void;
@@ -108,13 +108,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const signup = async (name: string, email: string, password: string, location: string): Promise<boolean> => {
+  const signup = async (name: string, email: string, password: string, location: string, otp?: string): Promise<boolean> => {
     setIsLoading(true);
     try {
       const response = await fetch(`${API_BASE_URL}/api/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, location }),
+        body: JSON.stringify({ name, email, password, location, otp }),
       });
 
       const data = await response.json();

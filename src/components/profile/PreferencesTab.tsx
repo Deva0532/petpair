@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   BellIcon,
   EyeIcon,
@@ -14,8 +15,9 @@ import { useToast } from '../../contexts/ToastContext';
 import { getUserPreferences, updateUserPreferences } from '../../services/userService';
 
 export const PreferencesTab: React.FC = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { showToast } = useToast();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -82,16 +84,60 @@ export const PreferencesTab: React.FC = () => {
       return;
     }
 
-    // For now, show a message - password change would need a backend endpoint
-    showToast('Password change feature coming soon', 'info');
-    setShowPasswordModal(false);
-    setPasswordData({ current: '', new: '', confirm: '' });
+    // Call API to change password
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/api/auth/change-password', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          currentPassword: passwordData.current,
+          newPassword: passwordData.new
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        showToast('Password updated successfully', 'success');
+        setShowPasswordModal(false);
+        setPasswordData({ current: '', new: '', confirm: '' });
+      } else {
+        showToast(data.message || 'Failed to update password', 'error');
+      }
+    } catch (error) {
+      console.error('Error changing password:', error);
+      showToast('An error occurred. Please try again.', 'error');
+    }
   };
 
   const handleDeleteAccount = async () => {
-    // For now, show a message - account deletion would need a backend endpoint
-    showToast('For account deletion, please contact support', 'info');
-    setShowDeleteModal(false);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/api/auth/delete-account', {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        showToast('Account deleted successfully', 'success');
+        logout(); // Clear context and local storage
+        navigate('/');
+      } else {
+        const data = await response.json();
+        showToast(data.message || 'Failed to delete account', 'error');
+      }
+    } catch (error) {
+      console.error('Delete account error:', error);
+      showToast('An error occurred. Please try again.', 'error');
+    } finally {
+      setShowDeleteModal(false);
+    }
   };
 
   if (loading) {
@@ -104,7 +150,6 @@ export const PreferencesTab: React.FC = () => {
       </div>
     );
   }
-
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       {/* Notification Settings */}
@@ -306,6 +351,40 @@ export const PreferencesTab: React.FC = () => {
           <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
             <h3 className="text-xl font-semibold text-gray-900 mb-4">Change Password</h3>
             <div className="space-y-4">
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <p className="text-sm text-blue-800 mb-2">Don't remember your current password?</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full border-blue-200 text-blue-700 hover:bg-blue-100"
+                  onClick={async () => {
+                    try {
+                      const response = await fetch('http://localhost:5000/api/auth/forgot-password', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: user?.email }),
+                      });
+                      if (response.ok) {
+                        showToast('OTP sent to your email. Please check your inbox.', 'success');
+                        navigate('/forgot-password', { state: { email: user?.email, otpSent: true, fromProfile: true } });
+                      } else {
+                        showToast('Failed to send OTP', 'error');
+                      }
+                    } catch (e) {
+                      showToast('Error sending OTP', 'error');
+                    }
+                  }}
+                >
+                  Send OTP to Reset Password
+                </Button>
+              </div>
+
+              <div className="relative flex py-2 items-center">
+                <div className="flex-grow border-t border-gray-300"></div>
+                <span className="flex-shrink-0 mx-4 text-gray-400 text-xs uppercase">Or update manually</span>
+                <div className="flex-grow border-t border-gray-300"></div>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
                 <input

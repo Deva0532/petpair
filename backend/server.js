@@ -4,20 +4,43 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import cors from 'cors';
 import { OAuth2Client } from 'google-auth-library';
+import dotenv from 'dotenv';
+import nodemailer from 'nodemailer';
+
+dotenv.config();
 
 const app = express();
-const PORT = 5000;
-const JWT_SECRET = 'your_super_secret_key';
-const GOOGLE_CLIENT_ID = '491619630108-3e8nu5ocp54e5kjgb79rms5cqa91b847.apps.googleusercontent.com';
+const PORT = process.env.PORT;
+const JWT_SECRET = process.env.JWT_SECRET
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 app.use(cors());
 app.use(express.json());
 
-const MONGODB_URI = 'mongodb+srv://myAtlasDBUser:deva@myatlasclusteredu.hjsgp.mongodb.net/PetPair';
+const MONGODB_URI = process.env.MONGODB_URI;
 mongoose.connect(MONGODB_URI)
   .then(() => console.log('Connected to MongoDB'))
   .catch(err => console.error('Could not connect to MongoDB:', err));
+
+// --- NODEMAILER TRANSPORTER ---
+// Configure this in your .env file
+const transporter = nodemailer.createTransport({
+  service: process.env.EMAIL_SERVICE || 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
+});
+
+// Verify connection configuration
+transporter.verify(function (error, success) {
+  if (error) {
+    console.log('Nodemailer error:', error);
+  } else {
+    console.log('Server is ready to take our messages');
+  }
+});
 
 // User Schema
 const userSchema = new mongoose.Schema({
@@ -28,7 +51,7 @@ const userSchema = new mongoose.Schema({
   phone: { type: String, default: '' },
   bio: { type: String, default: 'Edit your bio to share your passion for pets!' },
   googleId: { type: String },
-  avatar: { type: String },
+  avatar: { type: String }
 });
 
 const User = mongoose.model('User', userSchema);
@@ -89,15 +112,70 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
+app.post('/api/auth/send-verification-otp', async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ message: 'Email is required' });
+
+  try {
+    const existingUser = await User.findOne({ email });
+    if (existingUser) return res.status(400).json({ message: 'User with this email already exists' });
+
+    // Generate 6 digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const hashedOtp = await bcrypt.hash(otp, 10);
+
+    // Save or update verification code
+    await VerificationCode.findOneAndUpdate(
+      { email },
+      { code: hashedOtp, expiresAt: new Date(Date.now() + 10 * 60 * 1000) }, // 10 mins
+      { upsert: true }
+    );
+
+    // Send email
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'Verify your email for Petpair',
+      text: `Your verification code is: ${otp}. It will expire in 10 minutes.`
+    };
+
+    await transporter.sendMail(mailOptions);
+    res.status(200).json({ message: 'Verification code sent' });
+
+  } catch (error) {
+    console.error('Send verification OTP error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 app.post('/api/register', async (req, res) => {
-  const { name, email, password, location } = req.body;
-  if (!name || !email || !password || !location) return res.status(400).json({ general: 'All required fields must be provided.' });
+  const { name, email, password, location, otp } = req.body;
+  if (!name || !email || !password || !location || !otp) return res.status(400).json({ general: 'All fields including OTP are required.' });
   try {
     const existingUser = await User.findOne({ email });
     if (existingUser) return res.status(409).json({ general: 'User with this email already exists.' });
+
+    // Verify OTP
+    const verificationEntry = await VerificationCode.findOne({ email });
+    if (!verificationEntry) {
+      return res.status(400).json({ general: 'Verification code expired or not found. Please resend.' });
+    }
+    if (verificationEntry.expiresAt < new Date()) {
+      return res.status(400).json({ general: 'Verification code expired. Please resend.' });
+    }
+    const isMatch = await bcrypt.compare(otp, verificationEntry.code);
+    if (!isMatch) {
+      return res.status(400).json({ general: 'Invalid verification code.' });
+    }
+
+    // Proceed with registration
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new User({ name, email, password: hashedPassword, location });
     await newUser.save();
+
+    // Clear OTP
+    await VerificationCode.deleteOne({ email });
+
     const token = jwt.sign({ userId: newUser._id, email: newUser.email, name: newUser.name, location: newUser.location, phone: newUser.phone, bio: newUser.bio }, JWT_SECRET, { expiresIn: '24h' });
     res.status(201).json({ message: 'User registered successfully', token });
   } catch (error) {
@@ -123,6 +201,175 @@ app.put('/api/profile', protect, async (req, res) => {
     res.status(500).json({ message: 'Server error during profile update' });
   }
 });
+
+// --- FORGOT PASSWORD ENDPOINTS ---
+
+// 1. Send OTP
+// 1. Send OTP
+app.post('/api/auth/forgot-password', async (req, res) => {
+  const { email } = req.body;
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      // Security: don't reveal if user exists
+      return res.status(200).json({ message: 'If that email exists, we have sent an OTP.' });
+    }
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const hashedOtp = await bcrypt.hash(otp, 10);
+
+    // Save or update verification code in separate collection
+    console.log(`Attempting to save OTP for ${email}...`);
+    const savedCode = await VerificationCode.findOneAndUpdate(
+      { email },
+      {
+        email, // Explicitly set email to ensure it's saved on upsert
+        code: hashedOtp,
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000) // 10 minutes 
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+    console.log('OTP saved result:', savedCode);
+
+    // Send Email
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'Your Password Reset OTP - PetPair',
+      text: `Your OTP for password reset is: ${otp}\n\nIt expires in 10 minutes.`
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error('Error sending email:', error);
+      } else {
+        console.log('Email sent: ' + info.response);
+      }
+    });
+
+    res.status(200).json({ message: 'If that email exists, we have sent an OTP.' });
+
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// 2. Reset Password
+// 2. Reset Password
+app.post('/api/auth/reset-password', async (req, res) => {
+  const { email, otp, newPassword } = req.body;
+  try {
+    // 1. Verify OTP first
+    const verificationEntry = await VerificationCode.findOne({ email });
+    if (!verificationEntry) {
+      return res.status(400).json({ message: 'Invalid or expired OTP' });
+    }
+
+    // Check expiry
+    if (verificationEntry.expiresAt < new Date()) {
+      return res.status(400).json({ message: 'Invalid or expired OTP' });
+    }
+
+    // Verify Hash
+    const isMatch = await bcrypt.compare(otp, verificationEntry.code);
+    if (!isMatch) return res.status(400).json({ message: 'Invalid OTP' });
+
+    // 2. Find User and Update Password
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    // user.resetPasswordOtp = undefined; // No longer needed
+    // user.resetPasswordExpires = undefined; // No longer needed
+    await user.save();
+
+    // 3. Delete OTP
+    await VerificationCode.deleteOne({ email });
+
+    res.status(200).json({ message: 'Password has been reset successfully' });
+
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// 3. Change Password (Logged In)
+app.put('/api/auth/change-password', protect, async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ message: 'Current and new passwords are required' });
+  }
+
+  try {
+    const user = await User.findById(req.user.userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Check if user has a password (google auth users might not)
+    if (!user.password) {
+      return res.status(400).json({ message: 'You are logged in via Google. Please use "Forgot Password?" to set a password.' });
+    }
+
+    // Verify current password
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Incorrect current password' });
+    }
+
+    // Update to new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    await user.save();
+
+    res.status(200).json({ message: 'Password updated successfully' });
+
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// 4. Delete Account
+app.delete('/api/auth/delete-account', protect, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Cascading delete
+    await Preferences.deleteOne({ userId });
+    await Wishlist.deleteMany({ userId });
+    await VerificationCode.deleteMany({ email: user.email });
+    await Pet.deleteMany({ ownerId: userId });
+
+    // Finally delete user
+    await User.findByIdAndDelete(userId);
+
+    res.status(200).json({ message: 'Account deleted successfully' });
+
+  } catch (error) {
+    console.error('Delete account error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+
+// --- VERIFICATION CODE SCHEMA ---
+const verificationCodeSchema = new mongoose.Schema({
+  email: { type: String, required: true },
+  code: { type: String, required: true },
+  expiresAt: { type: Date, required: true }
+}, { collection: 'otp' });
+verificationCodeSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+
+const VerificationCode = mongoose.model('VerificationCode', verificationCodeSchema);
 
 // --- PET SCHEMA ---
 const petSchema = new mongoose.Schema({
@@ -323,3 +570,4 @@ app.put('/api/preferences', protect, async (req, res) => {
 });
 
 app.listen(PORT, () => { console.log(`Server is running on http://localhost:${PORT}`); });
+

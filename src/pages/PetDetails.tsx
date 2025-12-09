@@ -22,7 +22,6 @@ import { Pet } from '../types';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { useAuth } from '../contexts/AuthContext';
-import { mockPets } from '../data/mockData';
 import { addToWishlist, removeFromWishlist, getWishlist } from '../services/petService';
 
 export const PetDetails: React.FC = () => {
@@ -57,14 +56,11 @@ export const PetDetails: React.FC = () => {
                     };
                     setPet(transformedPet);
                 } else {
-                    const foundPet = mockPets.find(p => p.id === id);
-                    if (foundPet) setPet(foundPet);
-                    else setError('Pet not found');
+                    setError('Pet not found');
                 }
             } catch (err) {
-                const foundPet = mockPets.find(p => p.id === id);
-                if (foundPet) setPet(foundPet);
-                else setError('Failed to load pet details');
+                console.error('Failed to load pet details:', err);
+                setError('Failed to load pet details');
             } finally {
                 setLoading(false);
             }
