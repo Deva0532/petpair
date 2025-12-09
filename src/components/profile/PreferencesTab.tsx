@@ -1,111 +1,129 @@
 import React, { useState, useEffect } from 'react';
 import {
-  GlobeAltIcon,
   BellIcon,
   EyeIcon,
-  AdjustmentsHorizontalIcon
+  ShieldCheckIcon,
+  KeyIcon,
+  ExclamationTriangleIcon,
+  CheckCircleIcon
 } from '@heroicons/react/24/outline';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 import { getUserPreferences, updateUserPreferences } from '../../services/userService';
 
 export const PreferencesTab: React.FC = () => {
   const { user } = useAuth();
+  const { showToast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [passwordData, setPasswordData] = useState({ current: '', new: '', confirm: '' });
+
   const [preferences, setPreferences] = useState({
-    // Notification Preferences
-    receiveMarketingEmails: true,
-    showRecommendations: true,
     emailNotifications: true,
-    pushNotifications: false,
     smsNotifications: false,
-    weeklyDigest: true,
-    instantAlerts: false,
+    marketingEmails: false,
     profileVisibility: 'public',
-    showOnlineStatus: true,
-    allowMessagesFromStrangers: true,
-    showLastSeen: false,
-    dataSharing: false,
-    analyticsTracking: true,
-    personalizedAds: false,
-    locationTracking: false,
-    theme: 'light',
-    compactMode: false,
-    showAnimations: true,
-    autoPlayVideos: false,
-    highContrastMode: false,
-    fontSize: 'medium',
-    soundEffects: true,
-    vibration: true,
+    showContact: false,
+    showLocation: true
   });
 
   // Fetch preferences on mount
   useEffect(() => {
     const fetchPreferences = async () => {
       if (user?.id) {
-        const prefs = await getUserPreferences(user.id);
-        if (prefs) {
-          setPreferences(prev => ({ ...prev, ...prefs }));
+        try {
+          const prefs = await getUserPreferences(user.id);
+          if (prefs) {
+            setPreferences(prev => ({
+              emailNotifications: prefs.emailNotifications ?? prev.emailNotifications,
+              smsNotifications: prefs.smsNotifications ?? prev.smsNotifications,
+              marketingEmails: prefs.marketingEmails ?? prev.marketingEmails,
+              profileVisibility: prefs.profileVisibility ?? prev.profileVisibility,
+              showContact: prefs.showContact ?? prev.showContact,
+              showLocation: prefs.showLocation ?? prev.showLocation
+            }));
+          }
+        } catch (error) {
+          console.error('Failed to fetch preferences:', error);
         }
       }
+      setLoading(false);
     };
     fetchPreferences();
   }, [user?.id]);
 
-  const updatePreference = (key: string, value: any) => {
-    setPreferences(prev => ({ ...prev, [key]: value }));
-  };
+  const updatePreference = async (key: string, value: any) => {
+    const newPrefs = { ...preferences, [key]: value };
+    setPreferences(newPrefs);
 
-  const handleSave = async () => {
+    // Auto-save on change
     if (user?.id) {
-      await updateUserPreferences(user.id, preferences);
-      alert('Preferences saved successfully!');
+      try {
+        await updateUserPreferences(user.id, newPrefs);
+        showToast('Setting updated', 'success', 2000);
+      } catch (error) {
+        console.error('Failed to save preference:', error);
+        showToast('Failed to save setting', 'error');
+      }
     }
   };
 
-  const handleReset = () => {
-    // Reset to default preferences
-    setPreferences({
-      receiveMarketingEmails: true,
-      showRecommendations: true,
-      emailNotifications: true,
-      pushNotifications: false,
-      smsNotifications: false,
-      weeklyDigest: true,
-      instantAlerts: false,
-      profileVisibility: 'public',
-      showOnlineStatus: true,
-      allowMessagesFromStrangers: true,
-      showLastSeen: false,
-      dataSharing: false,
-      analyticsTracking: true,
-      personalizedAds: false,
-      locationTracking: false,
-      theme: 'light',
-      compactMode: false,
-      showAnimations: true,
-      autoPlayVideos: false,
-      highContrastMode: false,
-      fontSize: 'medium',
-      soundEffects: true,
-      vibration: true,
-    });
+  const handlePasswordChange = async () => {
+    if (passwordData.new !== passwordData.confirm) {
+      showToast('New passwords do not match', 'error');
+      return;
+    }
+    if (passwordData.new.length < 6) {
+      showToast('Password must be at least 6 characters', 'error');
+      return;
+    }
+
+    // For now, show a message - password change would need a backend endpoint
+    showToast('Password change feature coming soon', 'info');
+    setShowPasswordModal(false);
+    setPasswordData({ current: '', new: '', confirm: '' });
   };
+
+  const handleDeleteAccount = async () => {
+    // For now, show a message - account deletion would need a backend endpoint
+    showToast('For account deletion, please contact support', 'info');
+    setShowDeleteModal(false);
+  };
+
+  if (loading) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        <div className="animate-pulse space-y-6">
+          <div className="h-40 bg-gray-200 rounded-xl"></div>
+          <div className="h-40 bg-gray-200 rounded-xl"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Notification Preferences */}
+      {/* Notification Settings */}
       <Card className="p-8">
         <div className="flex items-center space-x-3 mb-6">
-          <BellIcon className="w-6 h-6 text-violet-600" />
-          <h2 className="text-xl font-semibold text-gray-900">Notification Preferences</h2>
+          <div className="w-10 h-10 bg-violet-100 rounded-full flex items-center justify-center">
+            <BellIcon className="w-5 h-5 text-violet-600" />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">Notification Settings</h2>
+            <p className="text-sm text-gray-500">Manage how you receive notifications</p>
+          </div>
         </div>
 
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between py-3 border-b border-gray-100">
             <div>
               <h3 className="font-medium text-gray-900">Email Notifications</h3>
-              <p className="text-sm text-gray-500">Receive important updates via email</p>
+              <p className="text-sm text-gray-500">Receive emails about messages, matches, and updates</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
@@ -118,23 +136,7 @@ export const PreferencesTab: React.FC = () => {
             </label>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-medium text-gray-900">Push Notifications</h3>
-              <p className="text-sm text-gray-500">Get instant notifications on your device</p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={preferences.pushNotifications}
-                onChange={(e) => updatePreference('pushNotifications', e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-violet-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
-            </label>
-          </div>
-
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between py-3 border-b border-gray-100">
             <div>
               <h3 className="font-medium text-gray-900">SMS Notifications</h3>
               <p className="text-sm text-gray-500">Receive text messages for urgent updates</p>
@@ -150,39 +152,7 @@ export const PreferencesTab: React.FC = () => {
             </label>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-medium text-gray-900">Weekly Digest</h3>
-              <p className="text-sm text-gray-500">Get a summary of your activity and new matches</p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={preferences.weeklyDigest}
-                onChange={(e) => updatePreference('weeklyDigest', e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-violet-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
-            </label>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-medium text-gray-900">Instant Alerts</h3>
-              <p className="text-sm text-gray-500">Get notified immediately for new messages and matches</p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={preferences.instantAlerts}
-                onChange={(e) => updatePreference('instantAlerts', e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-violet-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
-            </label>
-          </div>
-
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between py-3">
             <div>
               <h3 className="font-medium text-gray-900">Marketing Emails</h3>
               <p className="text-sm text-gray-500">Receive promotional content and special offers</p>
@@ -190,8 +160,8 @@ export const PreferencesTab: React.FC = () => {
             <label className="relative inline-flex items-center cursor-pointer">
               <input
                 type="checkbox"
-                checked={preferences.receiveMarketingEmails}
-                onChange={(e) => updatePreference('receiveMarketingEmails', e.target.checked)}
+                checked={preferences.marketingEmails}
+                onChange={(e) => updatePreference('marketingEmails', e.target.checked)}
                 className="sr-only peer"
               />
               <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-violet-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
@@ -203,132 +173,56 @@ export const PreferencesTab: React.FC = () => {
       {/* Privacy Settings */}
       <Card className="p-8">
         <div className="flex items-center space-x-3 mb-6">
-          <EyeIcon className="w-6 h-6 text-violet-600" />
-          <h2 className="text-xl font-semibold text-gray-900">Privacy Settings</h2>
+          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+            <EyeIcon className="w-5 h-5 text-blue-600" />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">Privacy Settings</h2>
+            <p className="text-sm text-gray-500">Control your profile visibility and data</p>
+          </div>
         </div>
 
         <div className="space-y-6">
-          <div>
+          <div className="py-3 border-b border-gray-100">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Profile Visibility
             </label>
             <select
               value={preferences.profileVisibility}
               onChange={(e) => updatePreference('profileVisibility', e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
             >
               <option value="public">Public - Anyone can see your profile</option>
-              <option value="registered">Registered Users Only</option>
               <option value="private">Private - Only you can see your profile</option>
             </select>
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between py-3 border-b border-gray-100">
             <div>
-              <h3 className="font-medium text-gray-900">Show Online Status</h3>
-              <p className="text-sm text-gray-500">Let others see when you're online</p>
+              <h3 className="font-medium text-gray-900">Show Contact Information</h3>
+              <p className="text-sm text-gray-500">Display your phone number and email to other users</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
                 type="checkbox"
-                checked={preferences.showOnlineStatus}
-                onChange={(e) => updatePreference('showOnlineStatus', e.target.checked)}
+                checked={preferences.showContact}
+                onChange={(e) => updatePreference('showContact', e.target.checked)}
                 className="sr-only peer"
               />
               <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-violet-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
             </label>
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between py-3">
             <div>
-              <h3 className="font-medium text-gray-900">Allow Messages from Strangers</h3>
-              <p className="text-sm text-gray-500">Let non-connected users send you messages</p>
+              <h3 className="font-medium text-gray-900">Show Location</h3>
+              <p className="text-sm text-gray-500">Display your city/location on your profile</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
                 type="checkbox"
-                checked={preferences.allowMessagesFromStrangers}
-                onChange={(e) => updatePreference('allowMessagesFromStrangers', e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-violet-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
-            </label>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-medium text-gray-900">Show Last Seen</h3>
-              <p className="text-sm text-gray-500">Display when you were last active</p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={preferences.showLastSeen}
-                onChange={(e) => updatePreference('showLastSeen', e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-violet-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
-            </label>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-medium text-gray-900">Data Sharing with Partners</h3>
-              <p className="text-sm text-gray-500">Allow sharing anonymized data with trusted partners</p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={preferences.dataSharing}
-                onChange={(e) => updatePreference('dataSharing', e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-violet-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
-            </label>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-medium text-gray-900">Analytics Tracking</h3>
-              <p className="text-sm text-gray-500">Help us improve by tracking usage patterns</p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={preferences.analyticsTracking}
-                onChange={(e) => updatePreference('analyticsTracking', e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-violet-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
-            </label>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-medium text-gray-900">Personalized Ads</h3>
-              <p className="text-sm text-gray-500">Show ads based on your interests and activity</p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={preferences.personalizedAds}
-                onChange={(e) => updatePreference('personalizedAds', e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-violet-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
-            </label>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-medium text-gray-900">Location Tracking</h3>
-              <p className="text-sm text-gray-500">Use your location for better recommendations</p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={preferences.locationTracking}
-                onChange={(e) => updatePreference('locationTracking', e.target.checked)}
+                checked={preferences.showLocation}
+                onChange={(e) => updatePreference('showLocation', e.target.checked)}
                 className="sr-only peer"
               />
               <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-violet-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
@@ -337,175 +231,146 @@ export const PreferencesTab: React.FC = () => {
         </div>
       </Card>
 
-      {/* Display & Accessibility */}
+      {/* Security Settings */}
       <Card className="p-8">
         <div className="flex items-center space-x-3 mb-6">
-          <AdjustmentsHorizontalIcon className="w-6 h-6 text-violet-600" />
-          <h2 className="text-xl font-semibold text-gray-900">Display & Accessibility</h2>
+          <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
+            <ShieldCheckIcon className="w-5 h-5 text-emerald-600" />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">Security</h2>
+            <p className="text-sm text-gray-500">Manage your account security</p>
+          </div>
         </div>
 
-        <div className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Theme
-            </label>
-            <select
-              value={preferences.theme}
-              onChange={(e) => updatePreference('theme', e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+        <div className="space-y-4">
+          <div className="flex items-center justify-between py-3 border-b border-gray-100">
+            <div>
+              <h3 className="font-medium text-gray-900">Change Password</h3>
+              <p className="text-sm text-gray-500">Update your account password</p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center space-x-2"
+              onClick={() => setShowPasswordModal(true)}
             >
-              <option value="light">Light</option>
-              <option value="dark">Dark</option>
-              <option value="auto">Auto (System)</option>
-            </select>
+              <KeyIcon className="w-4 h-4" />
+              <span>Change</span>
+            </Button>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Font Size
-            </label>
-            <select
-              value={preferences.fontSize}
-              onChange={(e) => updatePreference('fontSize', e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
-            >
-              <option value="small">Small</option>
-              <option value="medium">Medium</option>
-              <option value="large">Large</option>
-              <option value="extra-large">Extra Large</option>
-            </select>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-medium text-gray-900">Compact Mode</h3>
-              <p className="text-sm text-gray-500">Show more content in less space</p>
+          <div className="flex items-center justify-between py-3">
+            <div className="flex items-center space-x-3">
+              <CheckCircleIcon className="w-5 h-5 text-emerald-500" />
+              <div>
+                <h3 className="font-medium text-gray-900">Account Status</h3>
+                <p className="text-sm text-gray-500">Your account is active and verified</p>
+              </div>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={preferences.compactMode}
-                onChange={(e) => updatePreference('compactMode', e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-violet-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
-            </label>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-medium text-gray-900">Show Animations</h3>
-              <p className="text-sm text-gray-500">Enable smooth transitions and animations</p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={preferences.showAnimations}
-                onChange={(e) => updatePreference('showAnimations', e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-violet-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
-            </label>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-medium text-gray-900">Auto-play Videos</h3>
-              <p className="text-sm text-gray-500">Automatically play videos when scrolling</p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={preferences.autoPlayVideos}
-                onChange={(e) => updatePreference('autoPlayVideos', e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-violet-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
-            </label>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-medium text-gray-900">High Contrast Mode</h3>
-              <p className="text-sm text-gray-500">Increase contrast for better visibility</p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={preferences.highContrastMode}
-                onChange={(e) => updatePreference('highContrastMode', e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-violet-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
-            </label>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-medium text-gray-900">Sound Effects</h3>
-              <p className="text-sm text-gray-500">Play sounds for notifications and interactions</p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={preferences.soundEffects}
-                onChange={(e) => updatePreference('soundEffects', e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-violet-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
-            </label>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-medium text-gray-900">Vibration</h3>
-              <p className="text-sm text-gray-500">Enable haptic feedback on mobile devices</p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={preferences.vibration}
-                onChange={(e) => updatePreference('vibration', e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-violet-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
-            </label>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-medium text-gray-900">Show Recommendations</h3>
-              <p className="text-sm text-gray-500">Display personalized pet recommendations</p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={preferences.showRecommendations}
-                onChange={(e) => updatePreference('showRecommendations', e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-violet-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
-            </label>
           </div>
         </div>
       </Card>
 
-      {/* Action Buttons */}
-      <div className="flex justify-between">
-        <Button
-          onClick={handleReset}
-          variant="outline"
-          className="px-8"
-        >
-          Reset to Defaults
-        </Button>
-        <Button
-          onClick={handleSave}
-          className="bg-gradient-to-r from-violet-600 to-purple-600 px-8"
-        >
-          Save Preferences
-        </Button>
-      </div>
+      {/* Danger Zone */}
+      <Card className="p-8 border-2 border-red-200 bg-red-50">
+        <div className="flex items-center space-x-3 mb-6">
+          <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+            <ExclamationTriangleIcon className="w-5 h-5 text-red-600" />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold text-red-900">Danger Zone</h2>
+            <p className="text-sm text-red-700">Irreversible actions</p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="font-medium text-red-900">Delete Account</h3>
+            <p className="text-sm text-red-700">Permanently delete your account and all data</p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-red-600 border-red-300 hover:bg-red-100"
+            onClick={() => setShowDeleteModal(true)}
+          >
+            Delete Account
+          </Button>
+        </div>
+      </Card>
+
+      {/* Password Change Modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">Change Password</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+                <input
+                  type="password"
+                  value={passwordData.current}
+                  onChange={(e) => setPasswordData(p => ({ ...p, current: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-violet-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                <input
+                  type="password"
+                  value={passwordData.new}
+                  onChange={(e) => setPasswordData(p => ({ ...p, new: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-violet-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+                <input
+                  type="password"
+                  value={passwordData.confirm}
+                  onChange={(e) => setPasswordData(p => ({ ...p, confirm: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-violet-500"
+                />
+              </div>
+            </div>
+            <div className="flex space-x-3 mt-6">
+              <Button variant="outline" className="flex-1" onClick={() => setShowPasswordModal(false)}>
+                Cancel
+              </Button>
+              <Button className="flex-1 bg-violet-600" onClick={handlePasswordChange}>
+                Update Password
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Account Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <ExclamationTriangleIcon className="w-8 h-8 text-red-600" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900">Delete Account?</h3>
+              <p className="text-gray-500 mt-2">This action cannot be undone. All your data, pets, and messages will be permanently deleted.</p>
+            </div>
+            <div className="flex space-x-3">
+              <Button variant="outline" className="flex-1" onClick={() => setShowDeleteModal(false)}>
+                Cancel
+              </Button>
+              <Button
+                className="flex-1 bg-red-600 hover:bg-red-700"
+                onClick={handleDeleteAccount}
+              >
+                Delete Account
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

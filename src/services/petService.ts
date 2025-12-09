@@ -4,8 +4,11 @@ const CLOUDINARY_UPLOAD_PRESET = 'petpair';
 export interface PetData {
     name: string;
     breed: string;
+    customBreed?: string;
     age: number;
     type: string;
+    customType?: string;
+    gender?: 'male' | 'female';
     price: number;
     location: string;
     description: string;
@@ -13,8 +16,9 @@ export interface PetData {
     neutered: boolean;
     availableForMating: boolean;
     availableForSale: boolean;
-    featured: boolean;
+    featured?: boolean;
     imageUrls: string[];
+    weight?: number;
     createdAt?: any;
     size?: 'small' | 'medium' | 'large' | 'extra-large';
     activityLevel?: 'low' | 'moderate' | 'high';
@@ -23,6 +27,14 @@ export interface PetData {
     houseTrained?: boolean;
     spayedNeutered?: boolean;
     specialNeeds?: boolean;
+    healthRecords?: Array<{
+        visitType: string;
+        date: string;
+        notes?: string;
+        vetName?: string;
+    }>;
+    healthProblems?: string[];
+    medicalNotes?: string;
     status?: 'active' | 'sold' | 'deleted';
 }
 

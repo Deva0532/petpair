@@ -2,8 +2,11 @@ export interface Pet {
   id: string;
   name: string;
   breed: string;
+  customBreed?: string;
   age: number;
   type: 'dog' | 'cat' | 'bird' | 'fish' | 'reptile' | 'other';
+  customType?: string;
+  gender?: 'male' | 'female';
   price: number;
   location: string;
   image: string;
@@ -22,6 +25,7 @@ export interface Pet {
     space: string;
   };
   healthRecords?: HealthRecord[];
+  healthProblems?: string[];
   medicalNotes?: string;
   size?: 'small' | 'medium' | 'large' | 'extra-large';
   activityLevel?: 'low' | 'moderate' | 'high';
@@ -34,11 +38,14 @@ export interface Pet {
 }
 
 export interface HealthRecord {
-  id: string;
+  id?: string;
   date: string;
-  type: 'vaccination' | 'checkup' | 'treatment' | 'surgery';
-  description: string;
-  veterinarian: string;
+  visitType?: string;
+  type?: 'vaccination' | 'checkup' | 'treatment' | 'surgery';
+  description?: string;
+  notes?: string;
+  veterinarian?: string;
+  vetName?: string;
   documents?: string[];
 }
 
@@ -48,8 +55,8 @@ export interface User {
   email: string;
   avatar?: string;
   location: string;
-  verified: boolean;
-  joinedAt: string;
+  verified?: boolean;
+  joinedAt?: string;
   phone?: string;
   bio?: string;
   rating?: number;

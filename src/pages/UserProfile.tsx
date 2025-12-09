@@ -4,7 +4,6 @@ import { ProfileHeader } from '../components/profile/ProfileHeader';
 import { TabNavigation } from '../components/profile/TabNavigation';
 import { PersonalInfoTab } from '../components/profile/PersonalInfoTab';
 import { MyPetsTab } from '../components/profile/MyPetsTab';
-import { AccountSettingsTab } from '../components/profile/AccountSettingsTab';
 import { PreferencesTab } from '../components/profile/PreferencesTab';
 
 export const UserProfile: React.FC = () => {
@@ -29,8 +28,6 @@ export const UserProfile: React.FC = () => {
       case 'pets':
         return <MyPetsTab />;
       case 'settings':
-        return <AccountSettingsTab />;
-      case 'preferences':
         return <PreferencesTab />;
       default:
         return <PersonalInfoTab />;

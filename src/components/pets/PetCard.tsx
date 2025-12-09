@@ -13,9 +13,9 @@ interface PetCardProps {
   mode?: 'sell' | 'dating';
 }
 
-export const PetCard: React.FC<PetCardProps> = ({ 
-  pet, 
-  onFavorite, 
+export const PetCard: React.FC<PetCardProps> = ({
+  pet,
+  onFavorite,
   isFavorited = false,
   mode = 'sell'
 }) => {
@@ -33,8 +33,8 @@ export const PetCard: React.FC<PetCardProps> = ({
   };
 
   return (
-    <Card 
-      hover 
+    <Card
+      hover
       className="overflow-hidden group cursor-pointer transform transition-all duration-300 hover:scale-105 hover:shadow-xl"
       onClick={handleCardClick}
     >
@@ -44,11 +44,6 @@ export const PetCard: React.FC<PetCardProps> = ({
           alt={pet.name}
           className="w-full h-48 object-cover transition-transform duration-500"
         />
-        {pet.featured && (
-          <div className="absolute top-3 left-3 bg-gradient-to-r from-amber-400 to-orange-400 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
-            Club
-          </div>
-        )}
         {mode === 'dating' && (
           <div className="absolute top-3 left-3 bg-gradient-to-r from-rose-400 to-pink-400 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
             Available
@@ -65,32 +60,32 @@ export const PetCard: React.FC<PetCardProps> = ({
           )}
         </button>
       </div>
-      
+
       <div className="p-4">
         <div className="flex items-start justify-between mb-2">
           <h3 className="text-lg font-semibold text-gray-900">{pet.name}</h3>
           {mode === 'sell' ? (
-            <span className="text-lg font-bold text-violet-600">${pet.price}</span>
+            <span className="text-lg font-bold text-violet-600">₹{pet.price}</span>
           ) : (
             <span className="text-sm font-medium text-rose-600 bg-rose-50 px-2 py-1 rounded-full">
               Dating
             </span>
           )}
         </div>
-        
+
         <p className="text-sm text-gray-600 mb-2">
           {pet.breed} • {pet.age} year{pet.age !== 1 ? 's' : ''} old
         </p>
-        
+
         <div className="flex items-center text-sm text-gray-500 mb-3">
           <MapPinIcon className="w-4 h-4 mr-1" />
           {pet.location}
         </div>
-        
+
         <p className="text-sm text-gray-700 mb-4 line-clamp-2">
           {pet.description}
         </p>
-        
+
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             {pet.vaccinated && (
@@ -105,7 +100,7 @@ export const PetCard: React.FC<PetCardProps> = ({
               </div>
             )}
           </div>
-          
+
           <div className="flex items-center space-x-2">
             <img
               src={pet.owner.avatar || `https://ui-avatars.com/api/?name=${pet.owner.name}&background=8b5cf6&color=ffffff`}

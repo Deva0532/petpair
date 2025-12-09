@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PetCard } from '../components/pets/PetCard';
 import { PetFilters } from '../components/pets/PetFilters';
 import { mockPets } from '../data/mockData';
 import { Pet } from '../types';
-import { getPets } from '../services/petService';
+import { getPets, getWishlist, addToWishlist, removeFromWishlist } from '../services/petService';
+import { useAuth } from '../contexts/AuthContext';
 
 interface FilterOptions {
   type: string;
   breed: string;
+  gender: string;
   minAge: number;
   maxAge: number;
   minPrice: number;
@@ -16,8 +19,8 @@ interface FilterOptions {
   radius: number;
   vaccinated?: boolean;
   availableForMating?: boolean;
-  sizePreference?: string;
-  activityLevel?: string;
+  sizePreference: string;
+  activityLevel: string;
   goodWithKids?: boolean;
   goodWithPets?: boolean;
   houseTrained?: boolean;
@@ -26,16 +29,19 @@ interface FilterOptions {
 }
 
 export const Home: React.FC = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'sell' | 'dating'>('sell');
   const [pets, setPets] = useState<Pet[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<FilterOptions>({
     type: 'all',
     breed: '',
+    gender: 'any',
     minAge: 0,
     maxAge: 20,
     minPrice: 0,
-    maxPrice: 5000,
+    maxPrice: 500000,
     location: '',
     radius: 50,
     vaccinated: undefined,
@@ -49,6 +55,7 @@ export const Home: React.FC = () => {
     specialNeeds: undefined,
   });
   const [favorites, setFavorites] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState<'recent' | 'price-low' | 'price-high' | 'age' | 'featured'>('recent');
 
   useEffect(() => {
     const fetchPets = async () => {
@@ -65,11 +72,29 @@ export const Home: React.FC = () => {
     fetchPets();
   }, []);
 
+  useEffect(() => {
+    const fetchWishlist = async () => {
+      if (!user) {
+        setFavorites([]);
+        return;
+      }
+      try {
+        const wishlist = await getWishlist();
+        const favoriteIds = wishlist.map((item: any) => item.pet?.id || item.pet?._id).filter(Boolean);
+        setFavorites(favoriteIds);
+      } catch (error) {
+        console.error("Failed to fetch wishlist", error);
+      }
+    };
+    fetchWishlist();
+  }, [user]);
+
   const filteredPets = pets.filter(pet => {
     if (activeTab === 'dating' && !pet.availableForMating) return false;
     if (activeTab === 'sell' && pet.availableForMating && !pet.price) return false;
     if (filters.type !== 'all' && pet.type !== filters.type) return false;
     if (filters.breed && pet.breed !== filters.breed) return false;
+    if (filters.gender && filters.gender !== 'any' && pet.gender !== filters.gender) return false;
     if (filters.sizePreference && filters.sizePreference !== 'any' && pet.size !== filters.sizePreference) return false;
     if (filters.activityLevel && filters.activityLevel !== 'any' && pet.activityLevel !== filters.activityLevel) return false;
     if (pet.age < filters.minAge || pet.age > filters.maxAge) return false;
@@ -85,15 +110,50 @@ export const Home: React.FC = () => {
     return true;
   });
 
-  const featuredPets = filteredPets.filter(pet => pet.featured);
-  const regularPets = filteredPets.filter(pet => !pet.featured);
+  // Sort the filtered pets
+  const sortedPets = [...filteredPets].sort((a, b) => {
+    switch (sortBy) {
+      case 'featured':
+        if (a.featured && !b.featured) return -1;
+        if (!a.featured && b.featured) return 1;
+        return 0;
+      case 'price-low':
+        return (a.price || 0) - (b.price || 0);
+      case 'price-high':
+        return (b.price || 0) - (a.price || 0);
+      case 'age':
+        return a.age - b.age;
+      case 'recent':
+      default:
+        return 0; // Keep original order (newest first from API)
+    }
+  });
 
-  const handleFavorite = (petId: string) => {
-    setFavorites(prev =>
-      prev.includes(petId)
-        ? prev.filter(id => id !== petId)
-        : [...prev, petId]
-    );
+  const handleFavorite = async (petId: string) => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    const isCurrentlyFavorited = favorites.includes(petId);
+    if (isCurrentlyFavorited) {
+      setFavorites(prev => prev.filter(id => id !== petId));
+    } else {
+      setFavorites(prev => [...prev, petId]);
+    }
+    try {
+      if (isCurrentlyFavorited) {
+        await removeFromWishlist(petId);
+      } else {
+        await addToWishlist(petId);
+      }
+    } catch (error) {
+      console.error('Failed to update wishlist:', error);
+      if (isCurrentlyFavorited) {
+        setFavorites(prev => [...prev, petId]);
+      } else {
+        setFavorites(prev => prev.filter(id => id !== petId));
+      }
+    }
   };
 
   return (
@@ -113,19 +173,13 @@ export const Home: React.FC = () => {
             <div className="inline-flex bg-white/20 backdrop-blur-sm rounded-full p-1 mb-8">
               <button
                 onClick={() => setActiveTab('sell')}
-                className={`px-8 py-3 rounded-full font-semibold transition-all duration-300 ${activeTab === 'sell'
-                  ? 'bg-white text-violet-600 shadow-lg'
-                  : 'text-white hover:bg-white/10'
-                  }`}
+                className={`px-8 py-3 rounded-full font-semibold transition-all duration-300 ${activeTab === 'sell' ? 'bg-white text-violet-600 shadow-lg' : 'text-white hover:bg-white/10'}`}
               >
                 🏪 Buy & Sell
               </button>
               <button
                 onClick={() => setActiveTab('dating')}
-                className={`px-8 py-3 rounded-full font-semibold transition-all duration-300 ${activeTab === 'dating'
-                  ? 'bg-white text-rose-600 shadow-lg'
-                  : 'text-white hover:bg-white/10'
-                  }`}
+                className={`px-8 py-3 rounded-full font-semibold transition-all duration-300 ${activeTab === 'dating' ? 'bg-white text-rose-600 shadow-lg' : 'text-white hover:bg-white/10'}`}
               >
                 💕 Pet Dating
               </button>
@@ -137,34 +191,33 @@ export const Home: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div id="pets-section">
           <div className="flex flex-col lg:flex-row gap-8">
-            {/* Filters Sidebar - Sticky */}
+            {/* Filters Sidebar */}
             <div className="lg:w-1/4">
-              <div className="lg:sticky lg:top-20 lg:max-h-[calc(100vh-100px)] lg:overflow-y-auto scrollbar-thin scrollbar-thumb-violet-200 scrollbar-track-transparent">
-                <PetFilters
-                  filters={filters}
-                  onFiltersChange={setFilters}
-                  activeTab={activeTab}
-                />
+              <div className="lg:sticky lg:top-20 lg:max-h-[calc(100vh-100px)] lg:overflow-y-auto scrollbar-thin">
+                <PetFilters filters={filters} onFiltersChange={setFilters} activeTab={activeTab} />
               </div>
             </div>
 
             {/* Main Content */}
             <div className="lg:w-3/4">
-              {/* Results Count */}
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">
                   {activeTab === 'sell' ? 'Pets for Sale' : 'Dating Partners'} ({filteredPets.length})
                 </h2>
-                <select className="border border-gray-300 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-violet-500 focus:border-violet-500 bg-white shadow-sm">
-                  <option>Sort by: Featured</option>
-                  <option>Price: Low to High</option>
-                  <option>Price: High to Low</option>
-                  <option>Age: Youngest First</option>
-                  <option>Recently Added</option>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                  className="border border-gray-300 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-violet-500 bg-white shadow-sm cursor-pointer"
+                >
+                  <option value="recent">Sort by: Recent</option>
+                  <option value="featured">⭐ Featured First</option>
+                  <option value="price-low">Price: Low to High</option>
+                  <option value="price-high">Price: High to Low</option>
+                  <option value="age">Age: Youngest First</option>
                 </select>
               </div>
 
-              {/* Tab Content Description */}
+              {/* Tab Description */}
               <div className="mb-8 p-4 rounded-xl bg-gradient-to-r from-violet-50 to-rose-50 border border-violet-100">
                 {activeTab === 'sell' ? (
                   <div className="flex items-center space-x-3">
@@ -200,40 +253,19 @@ export const Home: React.FC = () => {
                 </div>
               ) : (
                 <>
-                  {/* Featured Pets */}
-                  {featuredPets.length > 0 && (
-                    <div className="mb-12">
-                      <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-                        ⭐ Club {activeTab === 'sell' ? 'Pets' : 'Partners'}
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                        {featuredPets.map(pet => (
-                          <PetCard
-                            key={pet.id}
-                            pet={pet}
-                            onFavorite={handleFavorite}
-                            isFavorited={favorites.includes(pet.id)}
-                            mode={activeTab}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* All Pets */}
-                  {regularPets.length > 0 && (
+                  {sortedPets.length > 0 && (
                     <div>
                       <h3 className="text-xl font-semibold text-gray-900 mb-4">
                         All Available {activeTab === 'sell' ? 'Pets' : 'Partners'}
                       </h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                        {regularPets.map(pet => (
+                        {sortedPets.map(pet => (
                           <PetCard
                             key={pet.id}
                             pet={pet}
-                            onFavorite={handleFavorite}
-                            isFavorited={favorites.includes(pet.id)}
                             mode={activeTab}
+                            isFavorited={favorites.includes(pet.id)}
+                            onFavorite={handleFavorite}
                           />
                         ))}
                       </div>
@@ -241,16 +273,10 @@ export const Home: React.FC = () => {
                   )}
 
                   {filteredPets.length === 0 && (
-                    <div className="text-center py-16">
-                      <div className="text-gray-400 mb-4">
-                        <svg className="mx-auto h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                        </svg>
-                      </div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                        No {activeTab === 'sell' ? 'pets' : 'partners'} found
-                      </h3>
-                      <p className="text-gray-600">Try adjusting your filters to see more results.</p>
+                    <div className="text-center py-12">
+                      <div className="text-6xl mb-4">🐾</div>
+                      <h3 className="text-xl font-semibold text-gray-900 mb-2">No pets found</h3>
+                      <p className="text-gray-600">Try adjusting your filters to find more pets</p>
                     </div>
                   )}
                 </>

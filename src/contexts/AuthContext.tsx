@@ -6,6 +6,7 @@ interface AuthContextType {
   user: User | null;
   signup: (name: string, email: string, password: string, location: string) => Promise<boolean>;
   login: (email: string, password: string) => Promise<boolean>;
+  loginWithGoogle: (credential: string) => Promise<boolean>;
   logout: () => void;
   updateProfile: (profileData: Partial<User>) => Promise<boolean>;
   isLoading: boolean;
@@ -26,7 +27,7 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-// Helper to decode JWT (kept here for context)
+// Helper to decode JWT
 const decodeToken = (token: string): User | null => {
   try {
     const payloadBase64 = token.split('.')[1];
@@ -49,7 +50,6 @@ const decodeToken = (token: string): User | null => {
   }
 };
 
-
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -67,8 +67,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, []);
 
-  // --- UPDATED: PROFILE SYNC ---
-  // Fetch additional profile data from Firestore when user is set
+  // Fetch profile data when user is set
   useEffect(() => {
     const fetchProfile = async () => {
       if (user?.id) {
@@ -97,7 +96,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser(decodedUser);
         return true;
       } else {
-        console.error("Login failed:", data.general || data.message);
         setUser(null);
         return false;
       }
@@ -126,7 +124,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser(decodedUser);
         return true;
       } else {
-        console.error("Signup failed:", data.general || data.message);
         setUser(null);
         return false;
       }
@@ -139,16 +136,41 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  // --- UPDATED: PROFILE UPDATE FUNCTION ---
+  // Google OAuth login
+  const loginWithGoogle = async (credential: string): Promise<boolean> => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        localStorage.setItem('token', data.token);
+        const decodedUser = decodeToken(data.token);
+        setUser(decodedUser);
+        return true;
+      } else {
+        console.error('Google login failed:', data.message);
+        setUser(null);
+        return false;
+      }
+    } catch (err) {
+      console.error('Network error during Google login:', err);
+      setUser(null);
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const updateProfile = async (profileData: Partial<User>): Promise<boolean> => {
     if (!user?.id) return false;
     setIsLoading(true);
-
     try {
-      // Update Firestore
       await updateUserProfile(user.id, profileData);
-
-      // Update local state immediately
       setUser(prev => prev ? { ...prev, ...profileData } : null);
       return true;
     } catch (err) {
@@ -168,6 +190,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     user,
     login,
     signup,
+    loginWithGoogle,
     logout,
     updateProfile,
     isLoading
