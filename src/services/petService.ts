@@ -40,6 +40,15 @@ export interface PetData {
 
 const API_BASE = 'http://localhost:5000/api';
 
+const DEFAULT_PET_IMAGE = 'https://placehold.co/600x400/e2e8f0/64748b?text=No+Image';
+
+const getPetImage = (pet: any): string => {
+    if (pet.imageUrls && pet.imageUrls.length > 0) {
+        return pet.imageUrls[0];
+    }
+    return DEFAULT_PET_IMAGE;
+};
+
 const getAuthHeaders = () => {
     const token = localStorage.getItem('token');
     return {
@@ -103,7 +112,7 @@ export const getPets = async (): Promise<any[]> => {
         return data.map((pet: any) => ({
             ...pet,
             id: pet._id,
-            image: pet.imageUrls && pet.imageUrls.length > 0 ? pet.imageUrls[0] : 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&q=80&w=800',
+            image: getPetImage(pet),
             owner: pet.ownerId ? { ...pet.ownerId, id: pet.ownerId._id } : { id: 'unknown', name: 'Unknown User', verified: false, location: 'Unknown' }
         }));
     } catch (error) {
@@ -122,7 +131,7 @@ export const getPetById = async (petId: string): Promise<any | null> => {
         return {
             ...pet,
             id: pet._id,
-            image: pet.imageUrls && pet.imageUrls.length > 0 ? pet.imageUrls[0] : 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&q=80&w=800',
+            image: getPetImage(pet),
             owner: pet.ownerId ? { ...pet.ownerId, id: pet.ownerId._id } : null
         };
     } catch (error) {
@@ -149,7 +158,7 @@ export const updatePet = async (petId: string, petData: Partial<PetData>): Promi
         return {
             ...pet,
             id: pet._id,
-            image: pet.imageUrls?.[0] || 'https://images.unsplash.com/photo-1543466835-00a7907e9de1',
+            image: getPetImage(pet),
             owner: pet.ownerId ? { ...pet.ownerId, id: pet.ownerId._id } : null
         };
     } catch (error) {

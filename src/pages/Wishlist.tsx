@@ -4,7 +4,7 @@ import { HeartIcon, TrashIcon, ExclamationTriangleIcon, ShoppingBagIcon } from '
 import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
-import { getWishlist, removeFromWishlist } from '../services/petService';
+import { getWishlist, removeFromWishlist, addToWishlist } from '../services/petService';
 import { useAuth } from '../contexts/AuthContext';
 import { Pet } from '../types';
 
@@ -18,7 +18,8 @@ export const Wishlist: React.FC = () => {
     const { user } = useAuth();
     const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
     const [loading, setLoading] = useState(true);
-    const [removingId, setRemovingId] = useState<string | null>(null);
+    const [processingId, setProcessingId] = useState<string | null>(null);
+    const [removedPetIds, setRemovedPetIds] = useState<Set<string>>(new Set());
 
     const fetchWishlist = async () => {
         if (!user) return;
@@ -36,15 +37,34 @@ export const Wishlist: React.FC = () => {
         fetchWishlist();
     }, [user]);
 
-    const handleRemove = async (petId: string) => {
-        setRemovingId(petId);
+    const handleToggle = async (petId: string) => {
+        if (processingId) return;
+        setProcessingId(petId);
+
         try {
-            await removeFromWishlist(petId);
-            setWishlistItems(prev => prev.filter(item => item.pet?.id !== petId));
+            const isRemoved = removedPetIds.has(petId);
+
+            if (isRemoved) {
+                // Restore item
+                await addToWishlist(petId);
+                setRemovedPetIds(prev => {
+                    const next = new Set(prev);
+                    next.delete(petId);
+                    return next;
+                });
+            } else {
+                // Remove item
+                await removeFromWishlist(petId);
+                setRemovedPetIds(prev => {
+                    const next = new Set(prev);
+                    next.add(petId);
+                    return next;
+                });
+            }
         } catch (error) {
-            console.error('Failed to remove from wishlist:', error);
+            console.error('Failed to update wishlist:', error);
         } finally {
-            setRemovingId(null);
+            setProcessingId(null);
         }
     };
 
@@ -139,8 +159,9 @@ export const Wishlist: React.FC = () => {
                                         <WishlistCard
                                             key={item.id}
                                             item={item}
-                                            onRemove={handleRemove}
-                                            removing={removingId === item.pet?.id}
+                                            onToggle={handleToggle}
+                                            isProcessing={processingId === item.pet?.id}
+                                            isRemoved={item.pet ? removedPetIds.has(item.pet.id) : false}
                                         />
                                     ))}
                                 </div>
@@ -160,8 +181,9 @@ export const Wishlist: React.FC = () => {
                                         <WishlistCard
                                             key={item.id}
                                             item={item}
-                                            onRemove={handleRemove}
-                                            removing={removingId === item.pet?.id}
+                                            onToggle={handleToggle}
+                                            isProcessing={processingId === item.pet?.id}
+                                            isRemoved={item.pet ? removedPetIds.has(item.pet.id) : false}
                                             status="sold"
                                         />
                                     ))}
@@ -182,8 +204,9 @@ export const Wishlist: React.FC = () => {
                                         <WishlistCard
                                             key={item.id}
                                             item={item}
-                                            onRemove={handleRemove}
-                                            removing={removingId === item.pet?.id}
+                                            onToggle={handleToggle}
+                                            isProcessing={processingId === item.pet?.id}
+                                            isRemoved={item.pet ? removedPetIds.has(item.pet.id) : false}
                                             status="deleted"
                                         />
                                     ))}
@@ -199,12 +222,13 @@ export const Wishlist: React.FC = () => {
 
 interface WishlistCardProps {
     item: WishlistItem;
-    onRemove: (petId: string) => void;
-    removing: boolean;
+    onToggle: (petId: string) => void;
+    isProcessing: boolean;
+    isRemoved: boolean;
     status?: 'sold' | 'deleted';
 }
 
-const WishlistCard: React.FC<WishlistCardProps> = ({ item, onRemove, removing, status }) => {
+const WishlistCard: React.FC<WishlistCardProps> = ({ item, onToggle, isProcessing, isRemoved, status }) => {
     const pet = item.pet;
 
     if (!pet) {
@@ -227,11 +251,11 @@ const WishlistCard: React.FC<WishlistCardProps> = ({ item, onRemove, removing, s
                         variant="outline"
                         size="sm"
                         className="w-full text-gray-500"
-                        onClick={() => onRemove(item.id)}
-                        disabled={removing}
+                        onClick={() => item.pet && onToggle(item.pet.id)}
+                        disabled={isProcessing}
                     >
                         <TrashIcon className="w-4 h-4 mr-2" />
-                        {removing ? 'Removing...' : 'Remove from wishlist'}
+                        {isProcessing ? 'Processing...' : (isRemoved ? 'Restore' : 'Remove from wishlist')}
                     </Button>
                 </div>
             </Card>
@@ -261,6 +285,22 @@ const WishlistCard: React.FC<WishlistCardProps> = ({ item, onRemove, removing, s
                         </div>
                     </div>
                 )}
+
+                <button
+                    onClick={(e) => {
+                        e.preventDefault();
+                        onToggle(pet.id);
+                    }}
+                    disabled={isProcessing}
+                    className="absolute top-3 right-3 p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-all duration-300 hover:scale-110 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed group/heart"
+                    title={isRemoved ? "Add to wishlist" : "Remove from wishlist"}
+                >
+                    {isRemoved ? (
+                        <HeartIcon className={`w-5 h-5 text-gray-600 transition-colors ${isProcessing ? 'animate-pulse' : 'hover:text-rose-500'}`} />
+                    ) : (
+                        <HeartSolidIcon className={`w-5 h-5 text-rose-500 transition-colors ${isProcessing ? 'animate-pulse' : 'group-hover/heart:text-gray-400'}`} />
+                    )}
+                </button>
             </div>
 
             <div className="p-5">
@@ -298,21 +338,12 @@ const WishlistCard: React.FC<WishlistCardProps> = ({ item, onRemove, removing, s
 
                 <div className="flex space-x-2">
                     {!status && (
-                        <Link to={`/pet/${pet.id}`} className="flex-1">
+                        <Link to={`/pet/${pet.id}`} className="w-full">
                             <Button className="w-full bg-gradient-to-r from-violet-600 to-purple-600">
                                 View Pet
                             </Button>
                         </Link>
                     )}
-                    <Button
-                        variant="outline"
-                        className={status ? "flex-1" : ""}
-                        onClick={() => onRemove(pet.id)}
-                        disabled={removing}
-                    >
-                        <TrashIcon className="w-4 h-4" />
-                        {status && <span className="ml-2">{removing ? 'Removing...' : 'Remove'}</span>}
-                    </Button>
                 </div>
             </div>
         </Card>

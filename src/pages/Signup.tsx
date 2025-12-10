@@ -143,29 +143,7 @@ export const Signup: React.FC = () => {
             <p className="text-gray-600 mt-1">Join the pet-loving community</p>
           </div>
 
-          {/* Google Sign Up */}
-          <div className="mb-5">
-            <div className="flex justify-center">
-              <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={() => setErrors({ general: 'Google sign up failed' })}
-                theme="outline"
-                size="large"
-                text="signup_with"
-                shape="pill"
-              />
-            </div>
-          </div>
 
-          {/* Divider */}
-          <div className="relative my-5">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white/90 text-gray-500">or register with email</span>
-            </div>
-          </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {errors.general && (
@@ -309,6 +287,30 @@ export const Signup: React.FC = () => {
               </Button>
             )}
           </form>
+
+          {/* Divider */}
+          <div className="relative my-5">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-4 bg-white/90 text-gray-500">or register with Google</span>
+            </div>
+          </div>
+
+          {/* Google Sign Up */}
+          <div className="mb-5">
+            <div className="flex justify-center">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => setErrors({ general: 'Google sign up failed' })}
+                theme="outline"
+                size="large"
+                text="signup_with"
+                shape="pill"
+              />
+            </div>
+          </div>
 
           <div className="mt-6 text-center">
             <p className="text-gray-600">

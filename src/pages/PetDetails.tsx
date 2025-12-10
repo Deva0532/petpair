@@ -23,11 +23,13 @@ import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { useAuth } from '../contexts/AuthContext';
 import { addToWishlist, removeFromWishlist, getWishlist } from '../services/petService';
+import { useToast } from '../contexts/ToastContext';
 
 export const PetDetails: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const { user } = useAuth();
+    const { showToast } = useToast();
     const [pet, setPet] = useState<Pet | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -47,7 +49,7 @@ export const PetDetails: React.FC = () => {
                     const transformedPet: Pet = {
                         ...data,
                         id: data._id,
-                        image: data.imageUrls?.[0] || '',
+                        image: (data.imageUrls && data.imageUrls.length > 0) ? data.imageUrls[0] : 'https://placehold.co/600x400/e2e8f0/64748b?text=No+Image',
                         owner: {
                             ...data.ownerId,
                             id: data.ownerId._id,
@@ -83,7 +85,10 @@ export const PetDetails: React.FC = () => {
     }, [user, id]);
 
     const handleToggleFavorite = async () => {
-        if (!user) { navigate('/login'); return; }
+        if (!user) {
+            showToast('Please sign in to add to wishlist', 'info');
+            return;
+        }
         if (!id || wishlistLoading) return;
         setWishlistLoading(true);
         try {
@@ -123,7 +128,15 @@ export const PetDetails: React.FC = () => {
         );
     }
 
-    const handleMessage = () => { if (!user) { navigate('/login'); return; } navigate('/messages'); };
+    const handleMessage = () => {
+        if (!user) {
+            navigate('/login');
+            return;
+        }
+        if (pet && pet.owner.phone && pet.availableForSale) {
+            window.open(`https://wa.me/${pet.owner.phone}`, '_blank');
+        }
+    };
     const handleContact = () => { if (!user) { navigate('/login'); return; } alert('Contact feature coming soon!'); };
     const handleShare = () => {
         if (navigator.share) { navigator.share({ title: `${pet.name} - ${pet.breed}`, text: `Check out ${pet.name}!`, url: window.location.href }); }
@@ -205,7 +218,14 @@ export const PetDetails: React.FC = () => {
                                 </div>
 
                                 <div className="flex space-x-4 mb-8">
-                                    <Button size="lg" className="flex-1 text-lg" onClick={handleMessage}>Message {pet.owner.name}</Button>
+                                    <Button
+                                        size="lg"
+                                        className="flex-1 text-lg"
+                                        onClick={handleMessage}
+                                        disabled={!pet.owner.phone || !pet.availableForSale || pet.status === 'sold'}
+                                    >
+                                        Message {pet.owner.name}
+                                    </Button>
                                     <Button size="lg" variant="outline" className="flex-1 text-lg" onClick={handleShare}>
                                         <ShareIcon className="w-5 h-5 mr-2" />Share
                                     </Button>
@@ -393,7 +413,11 @@ export const PetDetails: React.FC = () => {
                                 </div>
                             </div>
                             <div className="mt-6 flex space-x-3">
-                                <Button onClick={handleMessage} className="flex-1 flex items-center justify-center space-x-2">
+                                <Button
+                                    onClick={handleMessage}
+                                    className="flex-1 flex items-center justify-center space-x-2"
+                                    disabled={!pet.owner.phone || !pet.availableForSale || pet.status === 'sold'}
+                                >
                                     <ChatBubbleLeftRightIcon className="w-5 h-5" /><span>Message Owner</span>
                                 </Button>
                                 <Button variant="outline" onClick={handleContact} className="flex-1 flex items-center justify-center space-x-2">

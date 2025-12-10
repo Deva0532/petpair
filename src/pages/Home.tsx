@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { PetCard } from '../components/pets/PetCard';
 import { PetFilters } from '../components/pets/PetFilters';
 import { Pet } from '../types';
 import { getPets, getWishlist, addToWishlist, removeFromWishlist } from '../services/petService';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 
 interface FilterOptions {
   type: string;
@@ -28,8 +28,8 @@ interface FilterOptions {
 }
 
 export const Home: React.FC = () => {
-  const navigate = useNavigate();
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<'sell' | 'dating'>('sell');
   const [pets, setPets] = useState<Pet[]>([]);
   const [loading, setLoading] = useState(true);
@@ -133,7 +133,7 @@ export const Home: React.FC = () => {
 
   const handleFavorite = async (petId: string) => {
     if (!user) {
-      navigate('/login');
+      showToast('Please sign in to add to wishlist', 'info');
       return;
     }
     const isCurrentlyFavorited = favorites.includes(petId);

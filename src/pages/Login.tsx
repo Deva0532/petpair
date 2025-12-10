@@ -92,30 +92,7 @@ export const Login: React.FC = () => {
             <p className="text-gray-600 mt-2">Sign in to continue to your account</p>
           </div>
 
-          {/* Google Sign In */}
-          <div className="mb-6">
-            <div className="flex justify-center">
-              <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={() => setErrors({ general: 'Google sign in failed' })}
-                theme="outline"
-                size="large"
-                width="100%"
-                text="signin_with"
-                shape="pill"
-              />
-            </div>
-          </div>
 
-          {/* Divider */}
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white/90 text-gray-500">or continue with email</span>
-            </div>
-          </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             {errors.general && (
@@ -192,11 +169,36 @@ export const Login: React.FC = () => {
             </Button>
           </form>
 
+          {/* Divider */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-4 bg-white/90 text-gray-500">or continue with Google</span>
+            </div>
+          </div>
+
+          {/* Google Sign In */}
+          <div className="mb-6">
+            <div className="flex justify-center">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => setErrors({ general: 'Google sign in failed' })}
+                theme="outline"
+                size="large"
+                width="100%"
+                text="signin_with"
+                shape="pill"
+              />
+            </div>
+          </div>
+
           <div className="mt-8 text-center">
             <p className="text-gray-600">
               Don't have an account?{' '}
               <Link to="/signup" className="text-violet-600 hover:text-violet-700 font-semibold">
-                Sign up for free
+                Sign up
               </Link>
             </p>
           </div>
