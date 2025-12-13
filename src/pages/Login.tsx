@@ -46,7 +46,7 @@ export const Login: React.FC = () => {
             const payloadBase64 = token.split('.')[1];
             const base64 = payloadBase64.replace(/-/g, '+').replace(/_/g, '/');
             const decodedPayload = JSON.parse(atob(base64));
-            const isAdminUser = decodedPayload.email === 'varunrockes2004@gmail.com' || decodedPayload.role === 'admin';
+            const isAdminUser = decodedPayload.role === 'admin';
 
             if (isAdminUser) {
               navigate('/');

@@ -76,14 +76,16 @@ const protect = (req, res, next) => {
     req.user = decoded;
     next();
   } catch (error) {
+    console.error("JWT Verification ERROR:", error.message);
+    console.log("Received Token (first 50 chars):", token?.substring(0, 50));
     return res.status(401).json({ message: 'Not authorized, token failed' });
   }
 };
 
 // Admin Middleware - checks if user is admin
-const ADMIN_EMAIL = 'varunrockes2004@gmail.com';
+// Admin Middleware - checks if user is admin
 const isAdmin = (req, res, next) => {
-  if (req.user.email !== ADMIN_EMAIL && req.user.role !== 'admin') {
+  if (req.user.role !== 'admin') {
     return res.status(403).json({ message: 'Access denied. Admin only.' });
   }
   next();
@@ -109,8 +111,10 @@ const generateToken = (user) => {
     storeName: user.storeName,
     storeDescription: user.storeDescription,
     storeAddress: user.storeAddress,
-    role: user.email === ADMIN_EMAIL ? 'admin' : user.role
-  }, JWT_SECRET, { expiresIn: '24h' });
+    storeDescription: user.storeDescription,
+    storeAddress: user.storeAddress,
+    role: user.role
+  }, JWT_SECRET, { expiresIn: '7d' });
 };
 
 // --- GOOGLE AUTH ENDPOINT ---
@@ -125,6 +129,8 @@ app.post('/api/auth/google', async (req, res) => {
     let isNewGoogleUser = false;
 
     // Check if this is the admin email
+    // Check if this is the admin email
+    const ADMIN_EMAIL = 'varunrockes2004@gmail.com';
     const isAdminEmail = email === ADMIN_EMAIL;
 
     if (!user) {
@@ -141,19 +147,17 @@ app.post('/api/auth/google', async (req, res) => {
       });
       await user.save();
       isNewGoogleUser = !isAdminEmail; // Only mark as new if not admin
-    } else if (!user.googleId) {
-      user.googleId = googleId;
+    } else {
+      // Update existing user
+      if (!user.googleId) user.googleId = googleId;
       user.avatar = user.avatar || picture;
-      // If admin and still marked as new, auto-configure
-      if (isAdminEmail && user.isNewUser) {
-        user.isNewUser = false;
+
+      // Auto-migrate admin role if email matches
+      if (isAdminEmail) {
         user.role = 'admin';
+        user.isNewUser = false;
       }
-      await user.save();
-    } else if (isAdminEmail && user.isNewUser) {
-      // Existing admin user but still marked as new - fix it
-      user.isNewUser = false;
-      user.role = 'admin';
+
       await user.save();
     }
     const token = generateToken(user);

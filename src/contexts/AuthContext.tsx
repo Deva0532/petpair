@@ -35,11 +35,29 @@ interface AuthProviderProps {
 }
 
 // Helper to decode JWT
+// Helper to decode JWT
 const decodeToken = (token: string): User | null => {
   try {
-    const payloadBase64 = token.split('.')[1];
-    const base64 = payloadBase64.replace(/-/g, '+').replace(/_/g, '/');
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      throw new Error('Invalid token structure');
+    }
+    const payloadBase64 = parts[1];
+
+    // Add padding if needed
+    const pad = payloadBase64.length % 4;
+    const paddedPayload = pad ? payloadBase64 + '='.repeat(4 - pad) : payloadBase64;
+
+    const base64 = paddedPayload.replace(/-/g, '+').replace(/_/g, '/');
     const decodedPayload = JSON.parse(atob(base64));
+
+    // Check expiration
+    if (decodedPayload.exp && decodedPayload.exp * 1000 < Date.now()) {
+      console.warn("Token expired");
+      return null;
+    }
+
+    console.log("Decoded Token Success:", { email: decodedPayload.email, role: decodedPayload.role });
 
     return {
       id: decodedPayload.userId,
@@ -97,6 +115,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
     fetchProfile();
   }, [user?.id]);
+
+  // Periodic expiration check
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        const decoded = decodeToken(token);
+        // decodeToken now returns null if expired
+        if (!decoded) {
+          logout();
+          window.location.href = '/login'; // Force redirect
+        }
+      }
+    }, 60 * 1000); // Check every minute
+
+    return () => clearInterval(interval);
+  }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
@@ -216,8 +251,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // Check if current user is admin
-  const ADMIN_EMAIL = 'varunrockes2004@gmail.com';
-  const isAdmin = user?.email === ADMIN_EMAIL || user?.role === 'admin';
+  // const ADMIN_EMAIL = 'varunrockes2004@gmail.com'; // Deprecated hardcode
+  const isAdmin = user?.role === 'admin';
 
   const value: AuthContextType = {
     user,
