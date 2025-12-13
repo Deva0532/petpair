@@ -36,9 +36,33 @@ export const Login: React.FC = () => {
 
   const handleGoogleSuccess = async (credentialResponse: any) => {
     if (credentialResponse.credential) {
-      const success = await loginWithGoogle(credentialResponse.credential);
-      if (success) {
-        navigate('/');
+      const result = await loginWithGoogle(credentialResponse.credential);
+      if (result.success) {
+        // Admin should never see user type selection - always go to home/admin
+        // Decode JWT to check if admin
+        const token = localStorage.getItem('token');
+        if (token) {
+          try {
+            const payloadBase64 = token.split('.')[1];
+            const base64 = payloadBase64.replace(/-/g, '+').replace(/_/g, '/');
+            const decodedPayload = JSON.parse(atob(base64));
+            const isAdminUser = decodedPayload.email === 'varunrockes2004@gmail.com' || decodedPayload.role === 'admin';
+
+            if (isAdminUser) {
+              navigate('/');
+              return;
+            }
+          } catch (e) {
+            console.error('Error decoding token:', e);
+          }
+        }
+
+        // If new user (not admin), redirect to user type selection
+        if (result.isNewUser) {
+          navigate('/select-user-type');
+        } else {
+          navigate('/');
+        }
       } else {
         setErrors({ general: 'Failed to sign in with Google' });
       }

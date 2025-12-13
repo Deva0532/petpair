@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPinIcon, PhoneIcon, StarIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { MapPinIcon, PhoneIcon, StarIcon, ClockIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
 import { Veterinarian } from '../../types';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
@@ -9,7 +9,20 @@ interface VetCardProps {
   onBookAppointment?: (vetId: string) => void;
 }
 
-export const VetCard: React.FC<VetCardProps> = ({ vet, onBookAppointment }) => {
+export const VetCard: React.FC<VetCardProps> = ({ vet }) => {
+  const handleCall = () => {
+    if (vet.phone) {
+      window.location.href = `tel:${vet.phone.replace(/\s/g, '')}`;
+    }
+  };
+
+  const copyPhone = () => {
+    if (vet.phone) {
+      navigator.clipboard.writeText(vet.phone);
+      alert('Phone number copied to clipboard!');
+    }
+  };
+
   return (
     <Card className="p-6">
       <div className="flex items-start space-x-4">
@@ -18,7 +31,7 @@ export const VetCard: React.FC<VetCardProps> = ({ vet, onBookAppointment }) => {
           alt={vet.name}
           className="w-20 h-20 rounded-full object-cover"
         />
-        
+
         <div className="flex-1">
           <div className="flex items-start justify-between">
             <div>
@@ -29,7 +42,7 @@ export const VetCard: React.FC<VetCardProps> = ({ vet, onBookAppointment }) => {
                 <span className="text-sm text-gray-500">({vet.reviewCount} reviews)</span>
               </div>
             </div>
-            
+
             {vet.emergencyService && (
               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
                 <ClockIcon className="w-3 h-3 mr-1" />
@@ -49,35 +62,66 @@ export const VetCard: React.FC<VetCardProps> = ({ vet, onBookAppointment }) => {
                 </span>
               ))}
             </div>
-            
+
             <div className="flex items-center space-x-4 text-sm text-gray-600">
               <div className="flex items-center space-x-1">
                 <MapPinIcon className="w-4 h-4" />
                 <span>{vet.location}</span>
               </div>
-              <div className="flex items-center space-x-1">
-                <PhoneIcon className="w-4 h-4" />
-                <span>{vet.phone}</span>
-              </div>
             </div>
-            
-            <p className="text-sm text-gray-700 mt-2">{vet.address}</p>
+
+            {/* Availability Info */}
+            {(vet.availableDays && vet.availableDays.length > 0) || vet.availableTime ? (
+              <div className="flex items-start space-x-2 text-sm text-gray-600 mt-2 p-2 bg-emerald-50 rounded-lg">
+                <CalendarDaysIcon className="w-4 h-4 text-emerald-600 mt-0.5" />
+                <div>
+                  {vet.availableDays && vet.availableDays.length > 0 && (
+                    <p className="text-emerald-800">
+                      <span className="font-medium">Days:</span> {vet.availableDays.join(', ')}
+                    </p>
+                  )}
+                  {vet.availableTime && (
+                    <p className="text-emerald-800">
+                      <span className="font-medium">Hours:</span> {vet.availableTime}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ) : null}
+
+            {/* Only show address if it exists and is different from location */}
+            {vet.address && vet.address !== vet.location && (
+              <p className="text-sm text-gray-700 mt-2">{vet.address}</p>
+            )}
           </div>
 
           <div className="flex items-center justify-between mt-4">
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-blue-600 border-blue-600 hover:bg-blue-50"
-            >
-              View Details
-            </Button>
+            {/* Phone with copy option */}
+            <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-1 text-gray-600">
+                <PhoneIcon className="w-4 h-4" />
+                <span className="text-sm font-medium">{vet.phone || 'No phone'}</span>
+              </div>
+              {vet.phone && (
+                <button
+                  onClick={copyPhone}
+                  className="text-xs text-gray-500 hover:text-violet-600 underline"
+                >
+                  Copy
+                </button>
+              )}
+            </div>
+
+            {/* Call Button */}
             <Button
               variant="primary"
               size="sm"
-              onClick={() => onBookAppointment?.(vet.id)}
+              onClick={handleCall}
+              disabled={!vet.phone}
+              className="flex items-center space-x-1 bg-emerald-600 hover:bg-emerald-700"
             >
-              Book Appointment
+              <PhoneIcon className="w-4 h-4" />
+              <span>Call Now</span>
             </Button>
           </div>
         </div>

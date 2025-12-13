@@ -1,15 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MapIcon, FunnelIcon } from '@heroicons/react/24/outline';
 import { VetCard } from '../components/vets/VetCard';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
-import { mockVeterinarians } from '../data/mockData';
+import { Veterinarian } from '../types';
+
+const API_BASE_URL = 'http://localhost:5000';
 
 export const Vets: React.FC = () => {
   const [selectedSpecialty, setSelectedSpecialty] = useState('all');
   const [showEmergencyOnly, setShowEmergencyOnly] = useState(false);
   const [showMap, setShowMap] = useState(false);
   const [bookingVetId, setBookingVetId] = useState<string | null>(null);
+  const [vets, setVets] = useState<Veterinarian[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const specialties = [
     'all',
@@ -21,7 +25,41 @@ export const Vets: React.FC = () => {
     'Internal Medicine'
   ];
 
-  const filteredVets = mockVeterinarians.filter(vet => {
+  useEffect(() => {
+    fetchVets();
+  }, []);
+
+  const fetchVets = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/vets`);
+      if (response.ok) {
+        const data = await response.json();
+        // Map backend data to match Veterinarian interface
+        const mappedVets = data.map((vet: any) => ({
+          id: vet._id,
+          name: vet.name,
+          specialty: vet.specialty || [],
+          rating: vet.rating || 0,
+          reviewCount: vet.reviewCount || 0,
+          location: vet.location || '',
+          address: vet.address || '',
+          phone: vet.phone || '',
+          image: vet.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(vet.name)}&background=3b82f6&color=ffffff`,
+          emergencyService: vet.emergencyService || false,
+          availableDays: vet.availableDays || [],
+          availableTime: vet.availableTime || ''
+        }));
+        setVets(mappedVets);
+      }
+    } catch (error) {
+      console.error('Error fetching vets:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const filteredVets = vets.filter(vet => {
     if (selectedSpecialty !== 'all' && !vet.specialty.includes(selectedSpecialty)) {
       return false;
     }
@@ -72,7 +110,7 @@ export const Vets: React.FC = () => {
                   ))}
                 </select>
               </div>
-              
+
               <div className="flex items-end">
                 <label className="flex items-center">
                   <input
@@ -117,15 +155,22 @@ export const Vets: React.FC = () => {
           </h2>
         </div>
 
-        <div className="space-y-6">
-          {filteredVets.map((vet) => (
-            <VetCard
-              key={vet.id}
-              vet={vet}
-              onBookAppointment={handleBookAppointment}
-            />
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="text-center py-16">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading veterinarians...</p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {filteredVets.map((vet) => (
+              <VetCard
+                key={vet.id}
+                vet={vet}
+                onBookAppointment={handleBookAppointment}
+              />
+            ))}
+          </div>
+        )}
 
         {filteredVets.length === 0 && (
           <div className="text-center py-16">
@@ -151,9 +196,9 @@ export const Vets: React.FC = () => {
           <div>
             <p className="text-gray-600 mb-4">
               Book an appointment with{' '}
-              {bookingVetId && mockVeterinarians.find(v => v.id === bookingVetId)?.name}
+              {bookingVetId && vets.find((v: Veterinarian) => v.id === bookingVetId)?.name}
             </p>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">

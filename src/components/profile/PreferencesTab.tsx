@@ -6,7 +6,9 @@ import {
   ShieldCheckIcon,
   KeyIcon,
   ExclamationTriangleIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  EnvelopeIcon,
+  DevicePhoneMobileIcon
 } from '@heroicons/react/24/outline';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
@@ -15,7 +17,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { getUserPreferences, updateUserPreferences } from '../../services/userService';
 
 export const PreferencesTab: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshToken } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -23,6 +25,14 @@ export const PreferencesTab: React.FC = () => {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [passwordData, setPasswordData] = useState({ current: '', new: '', confirm: '' });
+
+  // Verification state
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [verificationType, setVerificationType] = useState<'email' | 'mobile'>('email');
+  const [verificationOtp, setVerificationOtp] = useState('');
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
 
   const [preferences, setPreferences] = useState({
     emailNotifications: true,
@@ -137,6 +147,88 @@ export const PreferencesTab: React.FC = () => {
       showToast('An error occurred. Please try again.', 'error');
     } finally {
       setShowDeleteModal(false);
+    }
+  };
+
+  // Verification handlers
+  const handleStartVerification = (type: 'email' | 'mobile') => {
+    setVerificationType(type);
+    setVerificationOtp('');
+    setOtpSent(false);
+    setShowVerificationModal(true);
+  };
+
+  const handleSendVerificationOtp = async () => {
+    setSendingOtp(true);
+    try {
+      const token = localStorage.getItem('token');
+      const value = verificationType === 'email' ? user?.email : user?.phone;
+
+      if (!value) {
+        showToast(`Please add your ${verificationType} first`, 'error');
+        setSendingOtp(false);
+        return;
+      }
+
+      const response = await fetch('http://localhost:5000/api/auth/send-profile-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ type: verificationType, value })
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setOtpSent(true);
+        showToast(`Verification code sent to your ${verificationType}`, 'success');
+      } else {
+        showToast(data.message || 'Failed to send verification code', 'error');
+      }
+    } catch (error) {
+      console.error('Send OTP error:', error);
+      showToast('Failed to send verification code', 'error');
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!verificationOtp || verificationOtp.length !== 6) {
+      showToast('Please enter a valid 6-digit code', 'error');
+      return;
+    }
+
+    setVerifyingOtp(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/api/auth/verify-profile-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ type: verificationType, otp: verificationOtp })
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        // Update token to reflect new verification status
+        if (data.token) {
+          localStorage.setItem('token', data.token);
+          refreshToken();
+        }
+        showToast(`${verificationType === 'email' ? 'Email' : 'Mobile'} verified successfully!`, 'success');
+        setShowVerificationModal(false);
+      } else {
+        showToast(data.message || 'Invalid verification code', 'error');
+      }
+    } catch (error) {
+      console.error('Verify OTP error:', error);
+      showToast('Failed to verify code', 'error');
+    } finally {
+      setVerifyingOtp(false);
     }
   };
 
@@ -273,6 +365,92 @@ export const PreferencesTab: React.FC = () => {
               <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-violet-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
             </label>
           </div>
+        </div>
+      </Card>
+
+      {/* Verification Settings */}
+      <Card className="p-8">
+        <div className="flex items-center space-x-3 mb-6">
+          <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
+            <CheckCircleIcon className="w-5 h-5 text-indigo-600" />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">Account Verification</h2>
+            <p className="text-sm text-gray-500">Verify your email and phone to get a verification badge</p>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          {/* Email Verification */}
+          <div className="flex items-center justify-between py-3 border-b border-gray-100">
+            <div className="flex items-center space-x-3">
+              <EnvelopeIcon className="w-5 h-5 text-gray-400" />
+              <div>
+                <h3 className="font-medium text-gray-900">Email Verification</h3>
+                <p className="text-sm text-gray-500">{user?.email}</p>
+              </div>
+            </div>
+            {user?.emailVerified ? (
+              <div className="flex items-center space-x-2 text-emerald-600">
+                <CheckCircleIcon className="w-5 h-5" />
+                <span className="text-sm font-medium">Verified</span>
+              </div>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleStartVerification('email')}
+                className="text-indigo-600 border-indigo-200 hover:bg-indigo-50"
+              >
+                Verify Email
+              </Button>
+            )}
+          </div>
+
+          {/* Mobile Verification */}
+          <div className="flex items-center justify-between py-3">
+            <div className="flex items-center space-x-3">
+              <DevicePhoneMobileIcon className="w-5 h-5 text-gray-400" />
+              <div>
+                <h3 className="font-medium text-gray-900">Mobile Verification</h3>
+                <p className="text-sm text-gray-500">{user?.phone || 'No phone number added'}</p>
+              </div>
+            </div>
+            {user?.mobileVerified ? (
+              <div className="flex items-center space-x-2 text-emerald-600">
+                <CheckCircleIcon className="w-5 h-5" />
+                <span className="text-sm font-medium">Verified</span>
+              </div>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleStartVerification('mobile')}
+                disabled={!user?.phone}
+                className="text-indigo-600 border-indigo-200 hover:bg-indigo-50 disabled:opacity-50"
+              >
+                Verify Mobile
+              </Button>
+            )}
+          </div>
+
+          {/* Verification Badge Info */}
+          {user?.emailVerified && user?.mobileVerified ? (
+            <div className="mt-4 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+              <div className="flex items-center space-x-2">
+                <CheckCircleIcon className="w-5 h-5 text-emerald-600" />
+                <span className="text-emerald-800 font-medium">Your account is fully verified!</span>
+              </div>
+              <p className="text-sm text-emerald-700 mt-1">You'll see a verification badge on your profile.</p>
+            </div>
+          ) : (
+            <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+              <p className="text-sm text-amber-800">
+                <strong>Tip:</strong> Verify both email and mobile to get a verification badge on your profile,
+                which helps build trust with other users.
+              </p>
+            </div>
+          )}
         </div>
       </Card>
 
@@ -447,6 +625,105 @@ export const PreferencesTab: React.FC = () => {
                 Delete Account
               </Button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Verification OTP Modal */}
+      {showVerificationModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                {verificationType === 'email' ? (
+                  <EnvelopeIcon className="w-8 h-8 text-indigo-600" />
+                ) : (
+                  <DevicePhoneMobileIcon className="w-8 h-8 text-indigo-600" />
+                )}
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900">
+                Verify {verificationType === 'email' ? 'Email' : 'Mobile'}
+              </h3>
+              <p className="text-gray-500 mt-2">
+                {otpSent
+                  ? `Enter the 6-digit code sent to your ${verificationType}`
+                  : `We'll send a verification code to ${verificationType === 'email' ? user?.email : user?.phone}`
+                }
+              </p>
+            </div>
+
+            {!otpSent ? (
+              <div className="space-y-4">
+                <Button
+                  onClick={handleSendVerificationOtp}
+                  disabled={sendingOtp}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700"
+                >
+                  {sendingOtp ? (
+                    <span className="flex items-center justify-center">
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Sending...
+                    </span>
+                  ) : (
+                    'Send Verification Code'
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowVerificationModal(false)}
+                  className="w-full"
+                >
+                  Cancel
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Verification Code
+                  </label>
+                  <input
+                    type="text"
+                    value={verificationOtp}
+                    onChange={(e) => setVerificationOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder="Enter 6-digit code"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-3 text-center text-2xl tracking-widest focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    maxLength={6}
+                  />
+                </div>
+                <div className="flex space-x-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowVerificationModal(false);
+                      setOtpSent(false);
+                      setVerificationOtp('');
+                    }}
+                    className="flex-1"
+                    disabled={verifyingOtp}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleVerifyOtp}
+                    disabled={verifyingOtp || verificationOtp.length !== 6}
+                    className="flex-1 bg-indigo-600 hover:bg-indigo-700"
+                  >
+                    {verifyingOtp ? 'Verifying...' : 'Verify'}
+                  </Button>
+                </div>
+                <button
+                  onClick={handleSendVerificationOtp}
+                  disabled={sendingOtp}
+                  className="w-full text-center text-sm text-indigo-600 hover:text-indigo-700"
+                >
+                  {sendingOtp ? 'Sending...' : 'Resend Code'}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -133,6 +133,10 @@ export const PetDetails: React.FC = () => {
             navigate('/login');
             return;
         }
+        // Prevent messaging yourself
+        if (pet && user.id === pet.owner.id) {
+            return;
+        }
         if (pet && pet.owner.phone && pet.availableForSale) {
             window.open(`https://wa.me/${pet.owner.phone}`, '_blank');
         }
@@ -222,9 +226,9 @@ export const PetDetails: React.FC = () => {
                                         size="lg"
                                         className="flex-1 text-lg"
                                         onClick={handleMessage}
-                                        disabled={!pet.owner.phone || !pet.availableForSale || pet.status === 'sold'}
+                                        disabled={!pet.owner.phone || !pet.availableForSale || pet.status === 'sold' || Boolean(user && user.id === pet.owner.id)}
                                     >
-                                        Message {pet.owner.name}
+                                        {user && user.id === pet.owner.id ? 'This is your pet' : `Message ${pet.owner.name}`}
                                     </Button>
                                     <Button size="lg" variant="outline" className="flex-1 text-lg" onClick={handleShare}>
                                         <ShareIcon className="w-5 h-5 mr-2" />Share
@@ -398,7 +402,7 @@ export const PetDetails: React.FC = () => {
                                 <div className="flex-1">
                                     <div className="flex items-center space-x-3 mb-3">
                                         <h3 className="text-2xl font-semibold text-gray-900">{pet.owner.name}</h3>
-                                        {pet.owner.verified && (
+                                        {(pet.owner.emailVerified || pet.owner.mobileVerified) && (
                                             <div className="flex items-center space-x-1">
                                                 <StarSolidIcon className="w-6 h-6 text-amber-400" />
                                                 <span className="text-sm text-emerald-600 font-medium">Verified</span>
@@ -416,9 +420,9 @@ export const PetDetails: React.FC = () => {
                                 <Button
                                     onClick={handleMessage}
                                     className="flex-1 flex items-center justify-center space-x-2"
-                                    disabled={!pet.owner.phone || !pet.availableForSale || pet.status === 'sold'}
+                                    disabled={!pet.owner.phone || !pet.availableForSale || pet.status === 'sold' || Boolean(user && user.id === pet.owner.id)}
                                 >
-                                    <ChatBubbleLeftRightIcon className="w-5 h-5" /><span>Message Owner</span>
+                                    <ChatBubbleLeftRightIcon className="w-5 h-5" /><span>{user && user.id === pet.owner.id ? 'This is your pet' : 'Message Owner'}</span>
                                 </Button>
                                 <Button variant="outline" onClick={handleContact} className="flex-1 flex items-center justify-center space-x-2">
                                     <PhoneIcon className="w-5 h-5" /><span>Contact</span>

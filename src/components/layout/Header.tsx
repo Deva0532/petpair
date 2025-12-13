@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ChatBubbleLeftRightIcon,
+  BellIcon,
   UserCircleIcon,
   Bars3Icon,
   XMarkIcon,
@@ -13,15 +13,26 @@ import { Button } from '../ui/Button';
 import { useAuth } from '../../contexts/AuthContext.tsx';
 import { getWishlist } from '../../services/petService';
 
+interface Notification {
+  _id: string;
+  title: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
+}
+
 interface HeaderProps {
   onOpenDating?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [wishlistCount, setWishlistCount] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -45,10 +56,65 @@ export const Header: React.FC<HeaderProps> = () => {
     fetchWishlistCount();
   }, [user]);
 
+  // Fetch notifications
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      if (user) {
+        try {
+          const token = localStorage.getItem('token');
+          const response = await fetch('http://localhost:5000/api/notifications', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (response.ok) {
+            const data = await response.json();
+            setNotifications(data.slice(0, 10)); // Show latest 10
+            setUnreadCount(data.filter((n: Notification) => !n.read).length);
+          }
+        } catch (error) {
+          console.error('Failed to fetch notifications');
+        }
+      }
+    };
+    fetchNotifications();
+
+    // Poll for new notifications every 30 seconds
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, [user]);
+
+  const markAsRead = async (notificationId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`http://localhost:5000/api/notifications/${notificationId}/read`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      setNotifications(prev => prev.map(n =>
+        n._id === notificationId ? { ...n, read: true } : n
+      ));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error('Failed to mark notification as read');
+    }
+  };
+
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    return `${diffDays}d ago`;
+  };
+
   return (
     <header className={`sticky top-0 z-50 transition-all duration-300 ${isScrolled
-        ? 'bg-white/95 backdrop-blur-lg shadow-lg border-b border-violet-100'
-        : 'bg-white shadow-sm border-b border-gray-200'
+      ? 'bg-white/95 backdrop-blur-lg shadow-lg border-b border-violet-100'
+      : 'bg-white shadow-sm border-b border-gray-200'
       }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
@@ -109,6 +175,14 @@ export const Header: React.FC<HeaderProps> = () => {
                 <Link to="/vets" className="px-4 py-2 text-gray-600 hover:text-violet-600 hover:bg-violet-50 rounded-xl transition-all font-medium">
                   Find Vets
                 </Link>
+                <Link to="/stores" className="px-4 py-2 text-gray-600 hover:text-violet-600 hover:bg-violet-50 rounded-xl transition-all font-medium">
+                  Pet Stores
+                </Link>
+                {isAdmin && (
+                  <Link to="/admin" className="px-4 py-2 text-violet-600 hover:text-violet-700 hover:bg-violet-50 rounded-xl transition-all font-medium">
+                    Admin
+                  </Link>
+                )}
                 <Link to="/wishlist" className="relative flex items-center justify-center w-10 h-10 rounded-xl text-gray-600 hover:text-rose-500 hover:bg-rose-50 transition-all">
                   <HeartIcon className="w-6 h-6" />
                   {wishlistCount > 0 && (
@@ -117,9 +191,58 @@ export const Header: React.FC<HeaderProps> = () => {
                     </span>
                   )}
                 </Link>
-                <Link to="/messages" className="flex items-center justify-center w-10 h-10 rounded-xl text-gray-600 hover:text-violet-600 hover:bg-violet-50 transition-all">
-                  <ChatBubbleLeftRightIcon className="w-6 h-6" />
-                </Link>
+                {/* Notification Bell */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowNotifications(!showNotifications)}
+                    className="relative flex items-center justify-center w-10 h-10 rounded-xl text-gray-600 hover:text-violet-600 hover:bg-violet-50 transition-all"
+                  >
+                    <BellIcon className="w-6 h-6" />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-violet-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold shadow-md">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </span>
+                    )}
+                  </button>
+
+                  {/* Notification Dropdown */}
+                  {showNotifications && (
+                    <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50">
+                      <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                        <h3 className="font-semibold text-gray-900">Notifications</h3>
+                        <button
+                          onClick={() => setShowNotifications(false)}
+                          className="text-gray-400 hover:text-gray-600"
+                        >
+                          <XMarkIcon className="w-5 h-5" />
+                        </button>
+                      </div>
+                      <div className="max-h-96 overflow-y-auto">
+                        {notifications.length === 0 ? (
+                          <div className="p-4 text-center text-gray-500">
+                            No notifications yet
+                          </div>
+                        ) : (
+                          notifications.map((notification) => (
+                            <div
+                              key={notification._id}
+                              onClick={() => markAsRead(notification._id)}
+                              className={`px-4 py-3 border-b border-gray-50 cursor-pointer hover:bg-gray-50 ${!notification.read ? 'bg-violet-50' : ''}`}
+                            >
+                              <div className="flex items-start justify-between">
+                                <h4 className={`text-sm font-medium ${!notification.read ? 'text-violet-800' : 'text-gray-800'}`}>
+                                  {notification.title}
+                                </h4>
+                                <span className="text-xs text-gray-400">{formatTimeAgo(notification.createdAt)}</span>
+                              </div>
+                              <p className="text-xs text-gray-600 mt-1 line-clamp-2">{notification.message}</p>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
 
                 {/* User Dropdown */}
                 <div className="relative group">
@@ -191,6 +314,14 @@ export const Header: React.FC<HeaderProps> = () => {
                   <Link to="/vets" className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-violet-50 rounded-xl">
                     Find Vets
                   </Link>
+                  <Link to="/stores" className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-violet-50 rounded-xl">
+                    Pet Stores
+                  </Link>
+                  {isAdmin && (
+                    <Link to="/admin" className="flex items-center gap-3 px-4 py-3 text-violet-600 hover:bg-violet-50 rounded-xl font-medium">
+                      Admin Panel
+                    </Link>
+                  )}
                   <Link to="/wishlist" className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-violet-50 rounded-xl">
                     <HeartIcon className="w-5 h-5" />
                     Wishlist
@@ -198,10 +329,16 @@ export const Header: React.FC<HeaderProps> = () => {
                       <span className="ml-auto bg-rose-500 text-white text-xs px-2 py-0.5 rounded-full font-bold">{wishlistCount}</span>
                     )}
                   </Link>
-                  <Link to="/messages" className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-violet-50 rounded-xl">
-                    <ChatBubbleLeftRightIcon className="w-5 h-5" />
-                    Messages
-                  </Link>
+                  <button
+                    onClick={() => setShowNotifications(!showNotifications)}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-violet-50 rounded-xl"
+                  >
+                    <BellIcon className="w-5 h-5" />
+                    Notifications
+                    {unreadCount > 0 && (
+                      <span className="ml-auto bg-violet-500 text-white text-xs px-2 py-0.5 rounded-full font-bold">{unreadCount}</span>
+                    )}
+                  </button>
                   <div className="border-t border-gray-100 pt-2 mt-2">
                     <Link to="/profile" className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-violet-50 rounded-xl">
                       <UserCircleIcon className="w-5 h-5" />

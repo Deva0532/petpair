@@ -14,6 +14,10 @@ import { AddPet } from './pages/AddPet';
 import { PetDetails } from './pages/PetDetails';
 import { UserProfile } from './pages/UserProfile';
 import { Wishlist } from './pages/Wishlist';
+import { UserTypeSelection } from './pages/UserTypeSelection';
+import { PetStores } from './pages/PetStores';
+import { StoreDetails } from './pages/StoreDetails';
+import { AdminLayout } from './pages/admin/AdminLayout';
 
 const GOOGLE_CLIENT_ID = '491619630108-3e8nu5ocp54e5kjgb79rms5cqa91b847.apps.googleusercontent.com';
 
@@ -28,6 +32,8 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/select-user-type" element={<UserTypeSelection />} />
+                <Route path="/admin/*" element={<AdminLayout />} />
                 <Route path="/*" element={
                   <>
                     <Header />
@@ -39,6 +45,8 @@ function App() {
                       <Route path="/messages" element={<Messages />} />
                       <Route path="/profile" element={<UserProfile />} />
                       <Route path="/wishlist" element={<Wishlist />} />
+                      <Route path="/stores" element={<PetStores />} />
+                      <Route path="/stores/:id" element={<StoreDetails />} />
                     </Routes>
                   </>
                 } />

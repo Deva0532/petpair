@@ -2,14 +2,21 @@ import React, { createContext, useContext, useState, ReactNode, useEffect } from
 import { User } from '../types';
 import { getUserProfile, updateUserProfile } from '../services/userService';
 
+interface GoogleLoginResult {
+  success: boolean;
+  isNewUser?: boolean;
+}
+
 interface AuthContextType {
   user: User | null;
   signup: (name: string, email: string, password: string, location: string, otp?: string) => Promise<boolean>;
   login: (email: string, password: string) => Promise<boolean>;
-  loginWithGoogle: (credential: string) => Promise<boolean>;
+  loginWithGoogle: (credential: string) => Promise<GoogleLoginResult>;
   logout: () => void;
   updateProfile: (profileData: Partial<User>) => Promise<boolean>;
+  refreshToken: () => void;
   isLoading: boolean;
+  isAdmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -41,8 +48,19 @@ const decodeToken = (token: string): User | null => {
       location: decodedPayload.location || 'N/A',
       phone: decodedPayload.phone || '',
       bio: decodedPayload.bio || '',
-      verified: decodedPayload.verified || true,
-      joinedAt: decodedPayload.joinedAt || new Date().toISOString(),
+      avatar: decodedPayload.avatar,
+      joinedAt: decodedPayload.joinedAt,
+      // New fields
+      userType: decodedPayload.userType || 'individual',
+      isNewUser: decodedPayload.isNewUser ?? false,
+      emailVerified: decodedPayload.emailVerified || false,
+      mobileVerified: decodedPayload.mobileVerified || false,
+      storeApproved: decodedPayload.storeApproved || false,
+      storeRejected: decodedPayload.storeRejected || false,
+      storeName: decodedPayload.storeName || '',
+      storeDescription: decodedPayload.storeDescription || '',
+      storeAddress: decodedPayload.storeAddress || '',
+      role: decodedPayload.role || 'user',
     };
   } catch (e) {
     console.error("Failed to decode token:", e);
@@ -137,7 +155,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // Google OAuth login
-  const loginWithGoogle = async (credential: string): Promise<boolean> => {
+  const loginWithGoogle = async (credential: string): Promise<GoogleLoginResult> => {
     setIsLoading(true);
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/google`, {
@@ -151,16 +169,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         localStorage.setItem('token', data.token);
         const decodedUser = decodeToken(data.token);
         setUser(decodedUser);
-        return true;
+        return { success: true, isNewUser: decodedUser?.isNewUser };
       } else {
         console.error('Google login failed:', data.message);
         setUser(null);
-        return false;
+        return { success: false };
       }
     } catch (err) {
       console.error('Network error during Google login:', err);
       setUser(null);
-      return false;
+      return { success: false };
     } finally {
       setIsLoading(false);
     }
@@ -186,6 +204,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setUser(null);
   };
 
+  // Refresh token from localStorage
+  const refreshToken = () => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      const decodedUser = decodeToken(token);
+      if (decodedUser) {
+        setUser(decodedUser);
+      }
+    }
+  };
+
+  // Check if current user is admin
+  const ADMIN_EMAIL = 'varunrockes2004@gmail.com';
+  const isAdmin = user?.email === ADMIN_EMAIL || user?.role === 'admin';
+
   const value: AuthContextType = {
     user,
     login,
@@ -193,7 +226,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loginWithGoogle,
     logout,
     updateProfile,
-    isLoading
+    refreshToken,
+    isLoading,
+    isAdmin
   };
 
   return (

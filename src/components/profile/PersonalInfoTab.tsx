@@ -15,7 +15,7 @@ export const PersonalInfoTab: React.FC = () => {
     name: user?.name || '',
     email: user?.email || '',
     location: user?.location || '',
-    phone: user?.phone || '', 
+    phone: user?.phone || '',
     bio: user?.bio || 'Edit your bio to share your passion for pets!',
   });
 
@@ -26,11 +26,11 @@ export const PersonalInfoTab: React.FC = () => {
         name: user.name || '',
         email: user.email || '',
         location: user.location || '',
-        phone: user.phone || '', 
-        bio: user.bio || 'Edit your bio to share your passion for pets!', 
+        phone: user.phone || '',
+        bio: user.bio || 'Edit your bio to share your passion for pets!',
       });
     }
-  }, [user]); 
+  }, [user]);
 
   // --- UPDATED handleSave FUNCTION ---
   const handleSave = async () => {
@@ -68,9 +68,9 @@ export const PersonalInfoTab: React.FC = () => {
 
   if (!user) {
     return (
-        <div className="text-center text-lg text-red-500 py-12">
-            User not found. Please log in.
-        </div>
+      <div className="text-center text-lg text-red-500 py-12">
+        User not found. Please log in.
+      </div>
     );
   }
 
@@ -128,21 +128,21 @@ export const PersonalInfoTab: React.FC = () => {
             onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
             disabled={!isEditing}
           />
-          
+
           <Input
             label="Email Address (Read Only)"
             type="email"
             value={formData.email}
             disabled={true} // Email should not be editable here
           />
-          
+
           <Input
             label="Location"
             value={formData.location}
             onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
             disabled={!isEditing}
           />
-          
+
           <Input
             label="Phone Number"
             value={formData.phone}
@@ -172,12 +172,12 @@ export const PersonalInfoTab: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-gradient-to-br from-violet-50 to-purple-50 rounded-xl p-6">
               <h4 className="font-medium text-gray-900 mb-2">Member Since</h4>
-              <p className="text-gray-600">{new Date(user.joinedAt || '').toLocaleDateString()}</p>
+              <p className="text-gray-600">{user.joinedAt ? new Date(user.joinedAt).toLocaleDateString() : 'N/A'}</p>
             </div>
-            <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl p-6">
+            <div className={`bg-gradient-to-br rounded-xl p-6 ${(user.emailVerified || user.mobileVerified) ? 'from-emerald-50 to-green-50' : 'from-gray-50 to-gray-100'}`}>
               <h4 className="font-medium text-gray-900 mb-2">Verification Status</h4>
-              <p className="text-emerald-600 font-medium">
-                {user.verified ? '✓ Verified Account' : 'Pending Verification'}
+              <p className={`font-medium ${(user.emailVerified || user.mobileVerified) ? 'text-emerald-600' : 'text-gray-500'}`}>
+                {(user.emailVerified || user.mobileVerified) ? '✓ Verified Account' : '○ Pending Verification'}
               </p>
             </div>
           </div>

@@ -63,6 +63,17 @@ export interface User {
   reviewCount?: number;
   petsListed?: number;
   successfulSales?: number;
+  // New fields for pet stores & admin
+  userType?: 'individual' | 'store';
+  isNewUser?: boolean;
+  emailVerified?: boolean;
+  mobileVerified?: boolean;
+  storeApproved?: boolean;
+  storeRejected?: boolean;
+  storeName?: string;
+  storeDescription?: string;
+  storeAddress?: string;
+  role?: 'user' | 'admin';
 }
 
 export interface Veterinarian {
@@ -76,6 +87,8 @@ export interface Veterinarian {
   phone: string;
   image: string;
   emergencyService: boolean;
+  availableDays?: string[];
+  availableTime?: string;
 }
 
 export interface Message {
