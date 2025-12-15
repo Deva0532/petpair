@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { User } from '../types';
-import { getUserProfile, updateUserProfile } from '../services/userService';
+import { updateUserProfile } from '../services/userService';
 
 interface GoogleLoginResult {
   success: boolean;
@@ -91,47 +91,47 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
 
   // Checks for existing token on mount
+  const initialLoadRef = React.useRef(false);
   useEffect(() => {
+    if (initialLoadRef.current) return;
+    initialLoadRef.current = true;
+
     const token = localStorage.getItem('token');
+    console.log('Initial token check:', token ? 'Token exists' : 'No token');
     if (token) {
       const decodedUser = decodeToken(token);
       if (decodedUser) {
+        console.log('Setting user from token:', decodedUser.email);
         setUser(decodedUser);
       } else {
+        console.log('Token decode failed, removing token');
         localStorage.removeItem('token');
       }
     }
   }, []);
 
-  // Fetch profile data when user is set
-  useEffect(() => {
-    const fetchProfile = async () => {
-      if (user?.id) {
-        const profile = await getUserProfile(user.id);
-        if (profile) {
-          setUser(prev => prev ? { ...prev, ...profile } : null);
-        }
-      }
-    };
-    fetchProfile();
-  }, [user?.id]);
-
-  // Periodic expiration check
+  // Periodic expiration check - DISABLED for debugging
+  // The token check was causing unexpected logouts
+  /*
   useEffect(() => {
     const interval = setInterval(() => {
       const token = localStorage.getItem('token');
       if (token) {
+        console.log('Periodic token check running...');
         const decoded = decodeToken(token);
-        // decodeToken now returns null if expired
         if (!decoded) {
+          console.log('Token expired or invalid, logging out');
           logout();
-          window.location.href = '/login'; // Force redirect
+          window.location.href = '/login';
+        } else {
+          console.log('Token still valid for user:', decoded.email);
         }
       }
-    }, 60 * 1000); // Check every minute
+    }, 60 * 1000);
 
     return () => clearInterval(interval);
   }, []);
+  */
 
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
@@ -235,6 +235,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = () => {
+    console.log('LOGOUT CALLED - Stack trace:', new Error().stack);
     localStorage.removeItem('token');
     setUser(null);
   };

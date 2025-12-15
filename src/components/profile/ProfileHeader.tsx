@@ -3,6 +3,7 @@ import { CameraIcon, MapPinIcon, ShieldCheckIcon } from '@heroicons/react/24/out
 import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
+import { StarRating } from '../ui/StarRating';
 
 interface UserStats {
   petsListed: number;
@@ -161,15 +162,8 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ onPhotoChange }) =
             </div>
 
             {stats.reviewCount > 0 && (
-              <div className="flex items-center justify-center md:justify-start space-x-1 mb-6">
-                <div className="flex items-center space-x-1">
-                  {[...Array(5)].map((_, i) => (
-                    <StarSolidIcon
-                      key={i}
-                      className={`w-5 h-5 ${i < Math.floor(stats.rating) ? 'text-amber-300' : 'text-amber-300/30'}`}
-                    />
-                  ))}
-                </div>
+              <div className="flex items-center justify-center md:justify-start space-x-2 mb-6">
+                <StarRating rating={stats.rating} size="md" />
                 <span className="text-violet-100 ml-2">{stats.rating.toFixed(1)} ({stats.reviewCount} reviews)</span>
               </div>
             )}

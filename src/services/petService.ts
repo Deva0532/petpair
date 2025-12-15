@@ -102,22 +102,66 @@ export const addPet = async (petData: PetData): Promise<string> => {
     }
 };
 
-export const getPets = async (): Promise<any[]> => {
+export const getPets = async (
+    page: number = 1,
+    limit: number = 12,
+    sortBy: string = 'recent',
+    filters: any = {},
+    activeTab: string = 'sell'
+): Promise<{
+    pets: any[];
+    pagination: {
+        currentPage: number;
+        totalPages: number;
+        totalPets: number;
+        petsPerPage: number;
+    };
+}> => {
     try {
-        const response = await fetch(`${API_BASE}/pets`);
+        // Build query string with filters
+        const params = new URLSearchParams({
+            page: page.toString(),
+            limit: limit.toString(),
+            sortBy,
+            tab: activeTab
+        });
+
+        // Add filters to query params
+        if (filters.type && filters.type !== 'all') params.append('type', filters.type);
+        if (filters.breed) params.append('breed', filters.breed);
+        if (filters.gender && filters.gender !== 'any') params.append('gender', filters.gender);
+        if (filters.sizePreference && filters.sizePreference !== 'any') params.append('size', filters.sizePreference);
+        if (filters.activityLevel && filters.activityLevel !== 'any') params.append('activityLevel', filters.activityLevel);
+        if (filters.minAge) params.append('minAge', filters.minAge.toString());
+        if (filters.maxAge) params.append('maxAge', filters.maxAge.toString());
+        if (filters.minPrice) params.append('minPrice', filters.minPrice.toString());
+        if (filters.maxPrice) params.append('maxPrice', filters.maxPrice.toString());
+        if (filters.location) params.append('location', filters.location);
+        if (filters.vaccinated !== undefined) params.append('vaccinated', filters.vaccinated.toString());
+        if (filters.availableForMating !== undefined) params.append('availableForMating', filters.availableForMating.toString());
+        if (filters.goodWithKids !== undefined) params.append('goodWithKids', filters.goodWithKids.toString());
+        if (filters.goodWithPets !== undefined) params.append('goodWithPets', filters.goodWithPets.toString());
+        if (filters.houseTrained !== undefined) params.append('houseTrained', filters.houseTrained.toString());
+        if (filters.spayedNeutered !== undefined) params.append('spayedNeutered', filters.spayedNeutered.toString());
+        if (filters.specialNeeds !== undefined) params.append('specialNeeds', filters.specialNeeds.toString());
+
+        const response = await fetch(`${API_BASE}/pets?${params.toString()}`);
         if (!response.ok) {
             throw new Error('Failed to fetch pets');
         }
         const data = await response.json();
-        return data.map((pet: any) => ({
-            ...pet,
-            id: pet._id,
-            image: getPetImage(pet),
-            owner: pet.ownerId ? { ...pet.ownerId, id: pet.ownerId._id } : { id: 'unknown', name: 'Unknown User', verified: false, location: 'Unknown' }
-        }));
+        return {
+            pets: data.pets.map((pet: any) => ({
+                ...pet,
+                id: pet._id,
+                image: getPetImage(pet),
+                owner: pet.ownerId ? { ...pet.ownerId, id: pet.ownerId._id } : { id: 'unknown', name: 'Unknown User', verified: false, location: 'Unknown' }
+            })),
+            pagination: data.pagination
+        };
     } catch (error) {
         console.error("Error fetching pets: ", error);
-        return [];
+        return { pets: [], pagination: { currentPage: 1, totalPages: 0, totalPets: 0, petsPerPage: 12 } };
     }
 };
 

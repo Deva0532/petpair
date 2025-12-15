@@ -14,10 +14,12 @@ import {
     ScaleIcon,
     ShieldCheckIcon,
     ArrowLeftIcon,
+    FlagIcon,
     ChevronLeftIcon,
     ChevronRightIcon
 } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolidIcon, StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
+import { StarRating } from '../components/ui/StarRating';
 import { Pet } from '../types';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
@@ -36,7 +38,22 @@ export const PetDetails: React.FC = () => {
     const [isFavorited, setIsFavorited] = useState(false);
     const [wishlistLoading, setWishlistLoading] = useState(false);
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-    const [activeTab, setActiveTab] = useState<'overview' | 'health' | 'owner'>('overview');
+
+    // Check for tab query parameter
+    const searchParams = new URLSearchParams(window.location.search);
+    const tabParam = searchParams.get('tab') as 'overview' | 'health' | 'owner' | 'reviews' | null;
+    const [activeTab, setActiveTab] = useState<'overview' | 'health' | 'owner' | 'reviews'>(tabParam || 'overview');
+    const [reviews, setReviews] = useState<any[]>([]);
+    const [reviewsLoading, setReviewsLoading] = useState(false);
+    const [newReview, setNewReview] = useState({ rating: 0, comment: '' });
+    const [submittingReview, setSubmittingReview] = useState(false);
+    const [reportingReview, setReportingReview] = useState<string | null>(null);
+    const [showReportModal, setShowReportModal] = useState(false);
+    const [reportReason, setReportReason] = useState('');
+    const [customReason, setCustomReason] = useState('');
+    const [editingReview, setEditingReview] = useState<any | null>(null);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editReviewData, setEditReviewData] = useState({ rating: 0, comment: '' });
 
     useEffect(() => {
         const fetchPetDetails = async () => {
@@ -83,6 +100,26 @@ export const PetDetails: React.FC = () => {
         };
         checkWishlistStatus();
     }, [user, id]);
+
+    // Fetch reviews
+    useEffect(() => {
+        const fetchReviews = async () => {
+            if (!id) return;
+            try {
+                setReviewsLoading(true);
+                const response = await fetch(`http://localhost:5000/api/pets/${id}/reviews`);
+                if (response.ok) {
+                    const data = await response.json();
+                    setReviews(data);
+                }
+            } catch (error) {
+                console.error('Failed to fetch reviews:', error);
+            } finally {
+                setReviewsLoading(false);
+            }
+        };
+        fetchReviews();
+    }, [id]);
 
     const handleToggleFavorite = async () => {
         if (!user) {
@@ -148,6 +185,143 @@ export const PetDetails: React.FC = () => {
     const handleShare = () => {
         if (navigator.share) { navigator.share({ title: `${pet.name} - ${pet.breed}`, text: `Check out ${pet.name}!`, url: window.location.href }); }
         else { navigator.clipboard.writeText(window.location.href); showToast('Link copied to clipboard!', 'success'); }
+    };
+
+    const handleSubmitReview = async () => {
+        if (!user) {
+            showToast('Please sign in to write a review', 'info');
+            return;
+        }
+        if (newReview.rating === 0) {
+            showToast('Please select a rating', 'error');
+            return;
+        }
+        if (!newReview.comment.trim()) {
+            showToast('Please write a comment', 'error');
+            return;
+        }
+        try {
+            setSubmittingReview(true);
+            const token = localStorage.getItem('token');
+            const response = await fetch(`http://localhost:5000/api/pets/${id}/reviews`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(newReview)
+            });
+            const data = await response.json();
+            if (response.ok) {
+                showToast('Review submitted successfully!', 'success');
+                setReviews([data, ...reviews]);
+                setNewReview({ rating: 0, comment: '' });
+            } else {
+                showToast(data.message || 'Failed to submit review', 'error');
+            }
+        } catch (error) {
+            console.error('Failed to submit review:', error);
+            showToast('Failed to submit review', 'error');
+        } finally {
+            setSubmittingReview(false);
+        }
+    };
+
+    const handleReportReview = async (reviewId: string) => {
+        if (!user) {
+            showToast('Please sign in to report reviews', 'info');
+            return;
+        }
+        setReportingReview(reviewId);
+        setShowReportModal(true);
+    };
+
+    const handleEditReview = (review: any) => {
+        setEditingReview(review);
+        setEditReviewData({ rating: review.rating, comment: review.comment });
+        setShowEditModal(true);
+    };
+
+    const submitEditReview = async () => {
+        if (editReviewData.rating === 0) {
+            showToast('Please select a rating', 'error');
+            return;
+        }
+        if (!editReviewData.comment.trim()) {
+            showToast('Please write a comment', 'error');
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`http://localhost:5000/api/pets/${id}/reviews/${editingReview._id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(editReviewData)
+            });
+            const data = await response.json();
+            if (response.ok) {
+                showToast('Review updated successfully!', 'success');
+                setReviews(reviews.map(r => r._id === editingReview._id ? data : r));
+                setShowEditModal(false);
+                setEditingReview(null);
+                setEditReviewData({ rating: 0, comment: '' });
+            } else {
+                showToast(data.message || 'Failed to update review', 'error');
+            }
+        } catch (error) {
+            console.error('Failed to update review:', error);
+            showToast('Failed to update review', 'error');
+        }
+    };
+
+    const canEditReview = (review: any) => {
+        if (!user || review.userId._id !== user.id) return false;
+        const reviewDate = new Date(review.createdAt);
+        const now = new Date();
+        const hoursSinceReview = (now.getTime() - reviewDate.getTime()) / (1000 * 60 * 60);
+        return hoursSinceReview < 24; // Can edit within 24 hours
+    };
+
+    const submitReport = async () => {
+        if (!reportReason) {
+            showToast('Please select a reason', 'error');
+            return;
+        }
+        if (reportReason === 'Other' && !customReason.trim()) {
+            showToast('Please provide a reason', 'error');
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('token');
+            const finalReason = reportReason === 'Other' ? customReason : reportReason;
+            const response = await fetch(`http://localhost:5000/api/reviews/${reportingReview}/report`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ reason: finalReason })
+            });
+            const data = await response.json();
+            if (response.ok) {
+                showToast('Review reported successfully', 'success');
+                setShowReportModal(false);
+                setReportReason('');
+                setCustomReason('');
+            } else {
+                showToast(data.message || 'Failed to report review', 'error');
+            }
+        } catch (error) {
+            console.error('Failed to report review:', error);
+            showToast('Failed to report review', 'error');
+        } finally {
+            setReportingReview(null);
+        }
     };
 
     const displayType = pet.type === 'other' && pet.customType ? pet.customType : pet.type;
@@ -257,9 +431,9 @@ export const PetDetails: React.FC = () => {
             {/* Content Tabs */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="flex space-x-8 border-b border-gray-200 mb-8">
-                    {['overview', 'health', 'owner'].map((tab) => (
+                    {['overview', 'health', 'owner', 'reviews'].map((tab) => (
                         <button key={tab} onClick={() => setActiveTab(tab as any)} className={`pb-4 text-lg font-medium capitalize ${activeTab === tab ? 'text-violet-600 border-b-2 border-violet-600' : 'text-gray-500 hover:text-gray-700'}`}>
-                            {tab}
+                            {tab} {tab === 'reviews' && `(${reviews.length})`}
                         </button>
                     ))}
                 </div>
@@ -434,7 +608,232 @@ export const PetDetails: React.FC = () => {
                         </Card>
                     </div>
                 )}
+
+                {/* Reviews Tab */}
+                {activeTab === 'reviews' && (
+                    <div className="space-y-8">
+                        {/* Average Rating */}
+                        {reviews.length > 0 && (
+                            <Card className="p-6 bg-gradient-to-r from-violet-50 to-purple-50">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <h3 className="text-2xl font-bold text-gray-900 mb-2">Customer Reviews</h3>
+                                        <div className="flex items-center space-x-3">
+                                            <StarRating rating={reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length} size="lg" />
+                                            <span className="text-3xl font-bold text-gray-900">
+                                                {(reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1)}
+                                            </span>
+                                            <span className="text-gray-600">({reviews.length} {reviews.length === 1 ? 'review' : 'reviews'})</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </Card>
+                        )}
+
+                        {/* Write Review (Non-owners only) */}
+                        {user && pet.owner.id !== user.id && !reviews.some(r => r.userId._id === user.id) && (
+                            <Card className="p-6">
+                                <h3 className="text-xl font-semibold text-gray-900 mb-4">Write a Review</h3>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Rating</label>
+                                        <StarRating
+                                            rating={newReview.rating}
+                                            editable
+                                            onChange={(rating) => setNewReview({ ...newReview, rating })}
+                                            size="lg"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Comment</label>
+                                        <textarea
+                                            value={newReview.comment}
+                                            onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
+                                            rows={4}
+                                            className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                                            placeholder="Share your experience with this pet..."
+                                        />
+                                    </div>
+                                    <Button
+                                        onClick={handleSubmitReview}
+                                        disabled={submittingReview}
+                                        className="w-full"
+                                    >
+                                        {submittingReview ? 'Submitting...' : 'Submit Review'}
+                                    </Button>
+                                </div>
+                            </Card>
+                        )}
+
+                        {/* Reviews List */}
+                        <div className="space-y-4">
+                            {reviewsLoading ? (
+                                <div className="text-center py-8">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-600 mx-auto"></div>
+                                </div>
+                            ) : reviews.length === 0 ? (
+                                <Card className="p-8 text-center">
+                                    <div className="text-4xl mb-3">⭐</div>
+                                    <h3 className="text-lg font-medium text-gray-900 mb-1">No Reviews Yet</h3>
+                                    <p className="text-gray-500">Be the first to review this pet!</p>
+                                </Card>
+                            ) : (
+                                reviews.map((review) => (
+                                    <Card key={review._id} className="p-6">
+                                        <div className="flex items-start justify-between mb-4">
+                                            <div className="flex items-start space-x-4">
+                                                <img
+                                                    src={review.userId.avatar || `https://ui-avatars.com/api/?name=${review.userId.name}&background=8b5cf6&color=ffffff`}
+                                                    alt={review.userId.name}
+                                                    className="w-12 h-12 rounded-full"
+                                                />
+                                                <div>
+                                                    <h4 className="font-semibold text-gray-900">{review.userId.name}</h4>
+                                                    <div className="flex items-center space-x-2 mt-1">
+                                                        <StarRating rating={review.rating} size="sm" />
+                                                        <span className="text-sm text-gray-500">
+                                                            {new Date(review.createdAt).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {canEditReview(review) ? (
+                                                <button
+                                                    onClick={() => handleEditReview(review)}
+                                                    className="p-2 text-gray-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg transition-colors"
+                                                    title="Edit review"
+                                                >
+                                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                    </svg>
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    onClick={() => handleReportReview(review._id)}
+                                                    disabled={reportingReview === review._id}
+                                                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                    title="Report review"
+                                                >
+                                                    <FlagIcon className="w-5 h-5" />
+                                                </button>
+                                            )}
+                                        </div>
+                                        <p className="text-gray-700 leading-relaxed">{review.comment}</p>
+                                    </Card>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                )}
             </div>
+
+            {/* Report Modal */}
+            {showReportModal && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+                        <h3 className="text-xl font-bold text-gray-900 mb-4">Report Review</h3>
+                        <p className="text-gray-600 mb-4">Please select a reason for reporting this review:</p>
+
+                        <div className="space-y-3 mb-4">
+                            {['Spam or fake review', 'Offensive language', 'Misleading information', 'Harassment', 'Other'].map((reason) => (
+                                <label key={reason} className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <input
+                                        type="radio"
+                                        name="reportReason"
+                                        value={reason}
+                                        checked={reportReason === reason}
+                                        onChange={(e) => setReportReason(e.target.value)}
+                                        className="w-4 h-4 text-violet-600"
+                                    />
+                                    <span className="text-gray-700">{reason}</span>
+                                </label>
+                            ))}
+                        </div>
+
+                        {reportReason === 'Other' && (
+                            <textarea
+                                value={customReason}
+                                onChange={(e) => setCustomReason(e.target.value)}
+                                placeholder="Please describe the issue..."
+                                rows={3}
+                                className="w-full rounded-lg border border-gray-300 px-4 py-2 mb-4 focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                            />
+                        )}
+
+                        <div className="flex space-x-3">
+                            <button
+                                onClick={() => {
+                                    setShowReportModal(false);
+                                    setReportReason('');
+                                    setCustomReason('');
+                                    setReportingReview(null);
+                                }}
+                                className="flex-1 px-4 py-2 border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={submitReport}
+                                disabled={!reportReason || (reportReason === 'Other' && !customReason.trim())}
+                                className="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl font-medium hover:from-red-700 hover:to-rose-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Submit Report
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Review Modal */}
+            {showEditModal && editingReview && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+                        <h3 className="text-xl font-bold text-gray-900 mb-4">Edit Your Review</h3>
+
+                        <div className="space-y-4 mb-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Rating</label>
+                                <StarRating
+                                    rating={editReviewData.rating}
+                                    editable
+                                    onChange={(rating) => setEditReviewData({ ...editReviewData, rating })}
+                                    size="lg"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Comment</label>
+                                <textarea
+                                    value={editReviewData.comment}
+                                    onChange={(e) => setEditReviewData({ ...editReviewData, comment: e.target.value })}
+                                    rows={4}
+                                    className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                                    placeholder="Update your review..."
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex space-x-3">
+                            <button
+                                onClick={() => {
+                                    setShowEditModal(false);
+                                    setEditingReview(null);
+                                    setEditReviewData({ rating: 0, comment: '' });
+                                }}
+                                className="flex-1 px-4 py-2 border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={submitEditReview}
+                                disabled={!editReviewData.rating || !editReviewData.comment.trim()}
+                                className="flex-1 px-4 py-2 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-xl font-medium hover:from-violet-700 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Update Review
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

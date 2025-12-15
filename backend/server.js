@@ -507,18 +507,6 @@ const preferencesSchema = new mongoose.Schema({
   showContact: { type: Boolean, default: false }
 });
 
-// --- REVIEW SCHEMA ---
-const reviewSchema = new mongoose.Schema({
-  reviewerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  reviewedUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  rating: { type: Number, required: true, min: 1, max: 5 },
-  comment: { type: String, maxlength: 500 },
-  petId: { type: mongoose.Schema.Types.ObjectId, ref: 'Pet' }, // Optional: review related to a specific pet transaction
-  createdAt: { type: Date, default: Date.now }
-});
-// Prevent duplicate reviews from same user
-reviewSchema.index({ reviewerId: 1, reviewedUserId: 1 }, { unique: true });
-
 // --- VET SCHEMA ---
 const vetSchema = new mongoose.Schema({
   name: { type: String, required: true },
@@ -549,6 +537,23 @@ const notificationSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 notificationSchema.index({ userId: 1, createdAt: -1 });
+// Auto-delete notifications after 30 days
+notificationSchema.index({ createdAt: 1 }, { expireAfterSeconds: 2592000 }); // 30 days = 2592000 seconds
+
+// --- REVIEW SCHEMA ---
+const reviewSchema = new mongoose.Schema({
+  petId: { type: mongoose.Schema.Types.ObjectId, ref: 'Pet', required: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  rating: { type: Number, required: true, min: 1, max: 5 },
+  comment: { type: String, required: true },
+  reported: { type: Boolean, default: false },
+  reportedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  reportReasons: [{ type: String }],
+  reportCount: { type: Number, default: 0 },
+  createdAt: { type: Date, default: Date.now }
+});
+reviewSchema.index({ petId: 1, createdAt: -1 });
+reviewSchema.index({ petId: 1, userId: 1 }, { unique: true }); // One review per user per pet
 
 const Pet = mongoose.model('Pet', petSchema);
 const Wishlist = mongoose.model('Wishlist', wishlistSchema);
@@ -571,8 +576,108 @@ app.post('/api/pets', protect, async (req, res) => {
 
 app.get('/api/pets', async (req, res) => {
   try {
-    const pets = await Pet.find({ status: { $ne: 'deleted' } }).sort({ createdAt: -1 }).populate('ownerId', 'name email location phone bio avatar emailVerified mobileVerified createdAt');
-    res.json(pets);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 12;
+    const skip = (page - 1) * limit;
+    const sortBy = req.query.sortBy || 'recent';
+
+    // Build query with filters
+    const query = { status: { $ne: 'deleted' } };
+
+    // Apply filters from query parameters
+    if (req.query.type && req.query.type !== 'all') {
+      query.type = req.query.type;
+    }
+    if (req.query.breed) {
+      query.breed = req.query.breed;
+    }
+    if (req.query.gender && req.query.gender !== 'any') {
+      query.gender = req.query.gender;
+    }
+    if (req.query.size && req.query.size !== 'any') {
+      query.size = req.query.size;
+    }
+    if (req.query.activityLevel && req.query.activityLevel !== 'any') {
+      query.activityLevel = req.query.activityLevel;
+    }
+    if (req.query.minAge || req.query.maxAge) {
+      query.age = {};
+      if (req.query.minAge) query.age.$gte = parseInt(req.query.minAge);
+      if (req.query.maxAge) query.age.$lte = parseInt(req.query.maxAge);
+    }
+    if (req.query.minPrice || req.query.maxPrice) {
+      query.price = {};
+      if (req.query.minPrice) query.price.$gte = parseInt(req.query.minPrice);
+      if (req.query.maxPrice) query.price.$lte = parseInt(req.query.maxPrice);
+    }
+    if (req.query.location) {
+      query.location = { $regex: req.query.location, $options: 'i' };
+    }
+    if (req.query.vaccinated !== undefined) {
+      query.vaccinated = req.query.vaccinated === 'true';
+    }
+    if (req.query.availableForMating !== undefined) {
+      query.availableForMating = req.query.availableForMating === 'true';
+    }
+    if (req.query.goodWithKids !== undefined) {
+      query.goodWithKids = req.query.goodWithKids === 'true';
+    }
+    if (req.query.goodWithPets !== undefined) {
+      query.goodWithPets = req.query.goodWithPets === 'true';
+    }
+    if (req.query.houseTrained !== undefined) {
+      query.houseTrained = req.query.houseTrained === 'true';
+    }
+    if (req.query.spayedNeutered !== undefined) {
+      query.spayedNeutered = req.query.spayedNeutered === 'true';
+    }
+    if (req.query.specialNeeds !== undefined) {
+      query.specialNeeds = req.query.specialNeeds === 'true';
+    }
+    // Tab-specific filtering
+    if (req.query.tab === 'dating') {
+      query.availableForMating = true;
+    }
+
+    // Determine sort order based on sortBy parameter
+    let sortOptions = {};
+    switch (sortBy) {
+      case 'featured':
+        sortOptions = { featured: -1, createdAt: -1 };
+        break;
+      case 'price-low':
+        sortOptions = { price: 1, createdAt: -1 };
+        break;
+      case 'price-high':
+        sortOptions = { price: -1, createdAt: -1 };
+        break;
+      case 'age':
+        sortOptions = { age: 1, createdAt: -1 };
+        break;
+      case 'recent':
+      default:
+        sortOptions = { createdAt: -1 };
+        break;
+    }
+
+    const [pets, total] = await Promise.all([
+      Pet.find(query)
+        .sort(sortOptions)
+        .skip(skip)
+        .limit(limit)
+        .populate('ownerId', 'name email location phone bio avatar emailVerified mobileVerified createdAt'),
+      Pet.countDocuments(query)
+    ]);
+
+    res.json({
+      pets,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(total / limit),
+        totalPets: total,
+        petsPerPage: limit
+      }
+    });
   } catch (error) {
     res.status(500).json({ message: 'Server error fetching pets' });
   }
@@ -830,6 +935,283 @@ app.get('/api/stores/:id', async (req, res) => {
   }
 });
 
+// --- REVIEW ENDPOINTS ---
+
+// Get reviews for a pet
+app.get('/api/pets/:petId/reviews', async (req, res) => {
+  try {
+    const reviews = await Review.find({ petId: req.params.petId })
+      .populate('userId', 'name avatar')
+      .sort({ createdAt: -1 });
+    res.json(reviews);
+  } catch (error) {
+    console.error('Error fetching reviews:', error);
+    res.status(500).json({ message: 'Server error fetching reviews' });
+  }
+});
+
+// Create a review
+app.post('/api/pets/:petId/reviews', protect, async (req, res) => {
+  try {
+    const { rating, comment } = req.body;
+    const petId = req.params.petId;
+    const userId = req.user.userId;
+
+    // Validate rating
+    if (!rating || rating < 1 || rating > 5) {
+      return res.status(400).json({ message: 'Rating must be between 1 and 5' });
+    }
+
+    // Check if pet exists
+    const pet = await Pet.findById(petId).populate('ownerId');
+    if (!pet) {
+      return res.status(404).json({ message: 'Pet not found' });
+    }
+
+    // Check if user is the pet owner
+    if (pet.ownerId._id.toString() === userId) {
+      return res.status(403).json({ message: 'You cannot review your own pet' });
+    }
+
+    // Check if user already reviewed this pet
+    const existingReview = await Review.findOne({ petId, userId });
+    if (existingReview) {
+      return res.status(400).json({ message: 'You have already reviewed this pet' });
+    }
+
+    // Create review
+    const review = await Review.create({
+      petId,
+      userId,
+      rating,
+      comment
+    });
+
+    const populatedReview = await Review.findById(review._id).populate('userId', 'name avatar');
+
+    // Notify pet owner about new review
+    await new Notification({
+      userId: pet.ownerId._id,
+      title: 'New Review on Your Pet',
+      message: `${populatedReview.userId.name} left a ${rating}-star review on ${pet.name}`,
+      read: false
+    }).save();
+
+    res.status(201).json(populatedReview);
+  } catch (error) {
+    console.error('Error creating review:', error);
+    res.status(500).json({ message: 'Server error creating review' });
+  }
+});
+
+// Update own review
+app.put('/api/pets/:petId/reviews/:reviewId', protect, async (req, res) => {
+  try {
+    const { rating, comment } = req.body;
+    const review = await Review.findById(req.params.reviewId);
+
+    if (!review) {
+      return res.status(404).json({ message: 'Review not found' });
+    }
+
+    // Check if user owns the review
+    if (review.userId.toString() !== req.user.userId) {
+      return res.status(403).json({ message: 'You can only edit your own reviews' });
+    }
+
+    review.rating = rating || review.rating;
+    review.comment = comment || review.comment;
+    await review.save();
+
+    const updatedReview = await Review.findById(review._id).populate('userId', 'name avatar');
+    res.json(updatedReview);
+  } catch (error) {
+    console.error('Error updating review:', error);
+    res.status(500).json({ message: 'Server error updating review' });
+  }
+});
+
+// Delete own review
+app.delete('/api/pets/:petId/reviews/:reviewId', protect, async (req, res) => {
+  try {
+    const review = await Review.findById(req.params.reviewId);
+
+    if (!review) {
+      return res.status(404).json({ message: 'Review not found' });
+    }
+
+    // Check if user owns the review
+    if (review.userId.toString() !== req.user.userId) {
+      return res.status(403).json({ message: 'You can only delete your own reviews' });
+    }
+
+    await Review.findByIdAndDelete(req.params.reviewId);
+    res.json({ message: 'Review deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting review:', error);
+    res.status(500).json({ message: 'Server error deleting review' });
+  }
+});
+
+// Report a review
+app.post('/api/reviews/:reviewId/report', protect, async (req, res) => {
+  try {
+    const { reason } = req.body;
+    const review = await Review.findById(req.params.reviewId).populate('petId', 'name');
+
+    if (!review) {
+      return res.status(404).json({ message: 'Review not found' });
+    }
+
+    // Check if user already reported this review
+    if (review.reportedBy.includes(req.user.userId)) {
+      return res.status(400).json({ message: 'You have already reported this review' });
+    }
+
+    // Add user to reportedBy array and increment count
+    review.reportedBy.push(req.user.userId);
+    review.reportCount += 1;
+    review.reported = true;
+    if (reason) {
+      review.reportReasons.push(reason);
+    }
+    await review.save();
+
+    // Send notification to all admins
+    const admins = await User.find({ role: 'admin' });
+    const reportMessage = reason
+      ? `A review on "${review.petId.name}" has been reported for: ${reason}`
+      : `A review on "${review.petId.name}" has been reported and needs moderation`;
+
+    for (const admin of admins) {
+      await new Notification({
+        userId: admin._id,
+        title: 'Review Reported',
+        message: reportMessage,
+        read: false
+      }).save();
+    }
+
+    res.json({ message: 'Review reported successfully' });
+  } catch (error) {
+    console.error('Error reporting review:', error);
+    res.status(500).json({ message: 'Server error reporting review' });
+  }
+});
+
+// Get user's aggregate pet rating
+app.get('/api/users/:userId/rating', async (req, res) => {
+  try {
+    const userId = req.params.userId;
+
+    // Get all pets owned by this user
+    const userPets = await Pet.find({ ownerId: userId });
+    const petIds = userPets.map(pet => pet._id);
+
+    // Get all reviews for these pets
+    const reviews = await Review.find({ petId: { $in: petIds } });
+
+    if (reviews.length === 0) {
+      return res.json({ averageRating: 0, totalReviews: 0 });
+    }
+
+    // Calculate average rating
+    const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
+    const averageRating = totalRating / reviews.length;
+
+    res.json({
+      averageRating: Math.round(averageRating * 10) / 10, // Round to 1 decimal
+      totalReviews: reviews.length
+    });
+  } catch (error) {
+    console.error('Error fetching user rating:', error);
+    res.status(500).json({ message: 'Server error fetching user rating' });
+  }
+});
+
+// Admin: Get reported reviews
+app.get('/api/admin/reported-reviews', protect, isAdmin, async (req, res) => {
+  try {
+    const reviews = await Review.find({ reported: true })
+      .populate('userId', 'name email avatar')
+      .populate('petId', 'name imageUrls')
+      .sort({ reportCount: -1, createdAt: -1 });
+    res.json(reviews);
+  } catch (error) {
+    console.error('Error fetching reported reviews:', error);
+    res.status(500).json({ message: 'Server error fetching reported reviews' });
+  }
+});
+
+// Admin: Delete review
+app.delete('/api/admin/reviews/:reviewId', protect, isAdmin, async (req, res) => {
+  try {
+    const review = await Review.findById(req.params.reviewId).populate('petId', 'name');
+
+    if (!review) {
+      return res.status(404).json({ message: 'Review not found' });
+    }
+
+    // Notify the review author
+    await new Notification({
+      userId: review.userId,
+      title: 'Review Removed',
+      message: `Your review on "${review.petId.name}" was removed by admin for violating community guidelines`,
+      read: false
+    }).save();
+
+    // Notify all users who reported this review
+    for (const reporterId of review.reportedBy) {
+      await new Notification({
+        userId: reporterId,
+        title: 'Report Action Taken',
+        message: `The review you reported on "${review.petId.name}" has been removed by admin. Thank you for helping keep our community safe.`,
+        read: false
+      }).save();
+    }
+
+    await Review.findByIdAndDelete(req.params.reviewId);
+    res.json({ message: 'Review deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting review:', error);
+    res.status(500).json({ message: 'Server error deleting review' });
+  }
+});
+
+// Admin: Dismiss report (mark as false report)
+app.post('/api/admin/reviews/:reviewId/dismiss', protect, isAdmin, async (req, res) => {
+  try {
+    const review = await Review.findById(req.params.reviewId).populate('petId', 'name');
+
+    if (!review) {
+      return res.status(404).json({ message: 'Review not found' });
+    }
+
+    // Notify all users who reported this review
+    for (const reporterId of review.reportedBy) {
+      await new Notification({
+        userId: reporterId,
+        title: 'Report Reviewed',
+        message: `The review you reported on "${review.petId.name}" was reviewed by admin and found to be acceptable. Thank you for your vigilance.`,
+        read: false
+      }).save();
+    }
+
+    // Clear the report flags
+    review.reported = false;
+    review.reportedBy = [];
+    review.reportReasons = [];
+    review.reportCount = 0;
+    await review.save();
+
+    res.json({ message: 'Report dismissed successfully' });
+  } catch (error) {
+    console.error('Error dismissing report:', error);
+    res.status(500).json({ message: 'Server error dismissing report' });
+  }
+});
+
+
 // --- ADMIN ENDPOINTS ---
 app.get('/api/admin/stats', protect, isAdmin, async (req, res) => {
   try {
@@ -885,7 +1267,7 @@ app.delete('/api/admin/users/:id', protect, isAdmin, async (req, res) => {
       return res.status(403).json({ message: 'Cannot delete admin account' });
     }
 
-    // Send notification email before deleting
+    // Send notification email and create in-app notification before deleting
     if (reason) {
       const mailOptions = {
         from: process.env.EMAIL_USER,
@@ -894,6 +1276,20 @@ app.delete('/api/admin/users/:id', protect, isAdmin, async (req, res) => {
         text: `Dear ${user.name},\n\nWe regret to inform you that your account on PetPair has been removed by our admin team.\n\nReason: ${reason}\n\nIf you believe this was a mistake or have any questions, please contact our support team.\n\nBest regards,\nThe PetPair Team`
       };
       transporter.sendMail(mailOptions).catch(err => console.error('Email error:', err));
+
+      // Create in-app notification before deleting user
+      // Note: User won't be able to see this since account is being deleted,
+      // but we create it for consistency and potential audit trail
+      try {
+        await new Notification({
+          userId: userId,
+          title: 'Account Removal Notice',
+          message: `Your account has been removed by admin. Reason: ${reason}`,
+          read: false
+        }).save();
+      } catch (notifError) {
+        console.error('Error creating notification:', notifError);
+      }
     }
 
     // Cascading delete
@@ -901,6 +1297,7 @@ app.delete('/api/admin/users/:id', protect, isAdmin, async (req, res) => {
     await Wishlist.deleteMany({ userId });
     await VerificationCode.deleteMany({ email: user.email });
     await Pet.deleteMany({ ownerId: userId });
+    await Notification.deleteMany({ userId }); // Also delete notifications
     await User.findByIdAndDelete(userId);
 
     res.json({ message: 'User deleted successfully' });
@@ -952,6 +1349,18 @@ app.delete('/api/admin/pets/:id', protect, isAdmin, async (req, res) => {
         text: `Dear ${pet.ownerId.name},\n\nWe regret to inform you that your pet listing "${pet.name}" (${pet.breed}) has been removed from PetPair by our admin team.\n\nReason: ${reason}\n\nIf you believe this was a mistake or have any questions, please contact our support team.\n\nBest regards,\nThe PetPair Team`
       };
       transporter.sendMail(mailOptions).catch(err => console.error('Email error:', err));
+
+      // Create in-app notification
+      try {
+        await new Notification({
+          userId: pet.ownerId._id,
+          title: 'Pet Listing Removed',
+          message: `Your pet listing "${pet.name}" (${pet.breed}) has been removed. Reason: ${reason}`,
+          read: false
+        }).save();
+      } catch (notifError) {
+        console.error('Error creating notification:', notifError);
+      }
     }
 
     pet.status = 'deleted';
@@ -1130,8 +1539,12 @@ app.get('/api/users/:id/stats', async (req, res) => {
     // Count sold pets by this user
     const successfulSales = await Pet.countDocuments({ ownerId: userId, status: 'sold' });
 
-    // Calculate real average rating from reviews
-    const reviews = await Review.find({ reviewedUserId: userId });
+    // Get all pets owned by this user
+    const userPets = await Pet.find({ ownerId: userId });
+    const petIds = userPets.map(pet => pet._id);
+
+    // Get all reviews for these pets
+    const reviews = await Review.find({ petId: { $in: petIds } });
     const reviewCount = reviews.length;
     let rating = 0;
     if (reviewCount > 0) {

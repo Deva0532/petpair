@@ -521,7 +521,7 @@ export const MyPetsTab: React.FC = () => {
   const fetchUserPets = async () => {
     if (!user) return;
     try {
-      const allPets = await getPets();
+      const { pets: allPets } = await getPets(1, 1000); // Get all pets for filtering user's pets
       const userPets = allPets.filter(pet => pet.owner?.id === user.id && pet.status !== 'deleted');
       setPets(userPets);
     } catch (error) {

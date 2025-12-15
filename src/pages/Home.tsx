@@ -33,6 +33,13 @@ export const Home: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'sell' | 'dating'>('sell');
   const [pets, setPets] = useState<Pet[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 0,
+    totalPets: 0,
+    petsPerPage: 12
+  });
   const [filters, setFilters] = useState<FilterOptions>({
     type: 'all',
     breed: '',
@@ -58,9 +65,11 @@ export const Home: React.FC = () => {
 
   useEffect(() => {
     const fetchPets = async () => {
+      setLoading(true);
       try {
-        const fetchedPets = await getPets();
+        const { pets: fetchedPets, pagination: paginationData } = await getPets(currentPage, 12, sortBy, filters, activeTab);
         setPets(fetchedPets);
+        setPagination(paginationData);
       } catch (error) {
         console.error("Failed to fetch pets", error);
         setPets([]);
@@ -69,7 +78,12 @@ export const Home: React.FC = () => {
       }
     };
     fetchPets();
-  }, []);
+  }, [currentPage, sortBy, filters, activeTab]);
+
+  // Reset to page 1 when filters or tab changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters, activeTab]);
 
   useEffect(() => {
     const fetchWishlist = async () => {
@@ -88,48 +102,19 @@ export const Home: React.FC = () => {
     fetchWishlist();
   }, [user]);
 
+  // Only filter out user's own pets client-side
+  // All other filtering should be done on backend for proper pagination
   const filteredPets = pets.filter(pet => {
     // If logged in, filter out own pets
     if (user && pet.owner && (pet.owner.id === user.id || (pet.owner as any)._id === user.id)) return false;
-
-    if (activeTab === 'dating' && !pet.availableForMating) return false;
-    if (activeTab === 'sell' && pet.availableForMating && !pet.price) return false;
-    if (filters.type !== 'all' && pet.type !== filters.type) return false;
-    if (filters.breed && pet.breed !== filters.breed) return false;
-    if (filters.gender && filters.gender !== 'any' && pet.gender !== filters.gender) return false;
-    if (filters.sizePreference && filters.sizePreference !== 'any' && pet.size !== filters.sizePreference) return false;
-    if (filters.activityLevel && filters.activityLevel !== 'any' && pet.activityLevel !== filters.activityLevel) return false;
-    if (pet.age < filters.minAge || pet.age > filters.maxAge) return false;
-    if (activeTab === 'sell' && (pet.price < filters.minPrice || pet.price > filters.maxPrice)) return false;
-    if (filters.location && !pet.location.toLowerCase().includes(filters.location.toLowerCase())) return false;
-    if (filters.vaccinated !== undefined && pet.vaccinated !== filters.vaccinated) return false;
-    if (filters.availableForMating !== undefined && pet.availableForMating !== filters.availableForMating) return false;
-    if (filters.goodWithKids !== undefined && pet.goodWithKids !== filters.goodWithKids) return false;
-    if (filters.goodWithPets !== undefined && pet.goodWithPets !== filters.goodWithPets) return false;
-    if (filters.houseTrained !== undefined && pet.houseTrained !== filters.houseTrained) return false;
-    if (filters.spayedNeutered !== undefined && pet.spayedNeutered !== filters.spayedNeutered) return false;
-    if (filters.specialNeeds !== undefined && pet.specialNeeds !== filters.specialNeeds) return false;
     return true;
   });
 
-  // Sort the filtered pets
-  const sortedPets = [...filteredPets].sort((a, b) => {
-    switch (sortBy) {
-      case 'featured':
-        if (a.featured && !b.featured) return -1;
-        if (!a.featured && b.featured) return 1;
-        return 0;
-      case 'price-low':
-        return (a.price || 0) - (b.price || 0);
-      case 'price-high':
-        return (b.price || 0) - (a.price || 0);
-      case 'age':
-        return a.age - b.age;
-      case 'recent':
-      default:
-        return 0; // Keep original order (newest first from API)
-    }
-  });
+  // Use filtered pets for display
+  const displayPets = filteredPets;
+
+  // Use pagination total for count
+  const displayCount = pagination.totalPets;
 
   const handleFavorite = async (petId: string) => {
     if (!user) {
@@ -204,7 +189,7 @@ export const Home: React.FC = () => {
             <div className="lg:w-3/4">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">
-                  {activeTab === 'sell' ? 'Pets for Sale' : 'Dating Partners'} ({filteredPets.length})
+                  {activeTab === 'sell' ? 'Pets for Sale' : 'Dating Partners'} ({displayCount})
                 </h2>
                 <select
                   value={sortBy}
@@ -255,13 +240,13 @@ export const Home: React.FC = () => {
                 </div>
               ) : (
                 <>
-                  {sortedPets.length > 0 && (
+                  {displayPets.length > 0 && (
                     <div>
                       <h3 className="text-xl font-semibold text-gray-900 mb-4">
                         All Available {activeTab === 'sell' ? 'Pets' : 'Partners'}
                       </h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                        {sortedPets.map(pet => (
+                        {displayPets.map(pet => (
                           <PetCard
                             key={pet.id}
                             pet={pet}
@@ -271,6 +256,55 @@ export const Home: React.FC = () => {
                           />
                         ))}
                       </div>
+
+                      {/* Pagination Controls */}
+                      {pagination.totalPages > 1 && (
+                        <div className="mt-8 flex items-center justify-center gap-2">
+                          <button
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={currentPage === 1}
+                            className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          >
+                            Previous
+                          </button>
+
+                          <div className="flex items-center gap-1">
+                            {Array.from({ length: Math.min(pagination.totalPages, 5) }, (_, i) => {
+                              let pageNum;
+                              if (pagination.totalPages <= 5) {
+                                pageNum = i + 1;
+                              } else if (currentPage <= 3) {
+                                pageNum = i + 1;
+                              } else if (currentPage >= pagination.totalPages - 2) {
+                                pageNum = pagination.totalPages - 4 + i;
+                              } else {
+                                pageNum = currentPage - 2 + i;
+                              }
+
+                              return (
+                                <button
+                                  key={pageNum}
+                                  onClick={() => setCurrentPage(pageNum)}
+                                  className={`w-10 h-10 rounded-lg font-medium transition-colors ${currentPage === pageNum
+                                    ? 'bg-violet-600 text-white'
+                                    : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                                    }`}
+                                >
+                                  {pageNum}
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          <button
+                            onClick={() => setCurrentPage(prev => Math.min(pagination.totalPages, prev + 1))}
+                            disabled={currentPage === pagination.totalPages}
+                            className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          >
+                            Next
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
 

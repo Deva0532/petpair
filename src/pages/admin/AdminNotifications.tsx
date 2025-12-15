@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PaperAirplaneIcon, CheckCircleIcon, MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { PaperAirplaneIcon, MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useToast } from '../../contexts/ToastContext';
 
 const API_BASE_URL = 'http://localhost:5000';
@@ -18,7 +18,6 @@ export const AdminNotifications: React.FC = () => {
     const [message, setMessage] = useState('');
     const [targetType, setTargetType] = useState<'all' | 'individual' | 'store' | 'selected'>('all');
     const [isSending, setIsSending] = useState(false);
-    const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
 
     // User selection state
     const [users, setUsers] = useState<User[]>([]);
@@ -27,6 +26,8 @@ export const AdminNotifications: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoadingUsers, setIsLoadingUsers] = useState(false);
     const [showUserList, setShowUserList] = useState(false);
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [confirmMessage, setConfirmMessage] = useState('');
 
     // Fetch users when target type changes to individual or store
     useEffect(() => {
@@ -114,12 +115,14 @@ export const AdminNotifications: React.FC = () => {
                 ? `${selectedUsers.length} individual owner(s)`
                 : `${selectedUsers.length} store owner(s)`;
 
-        if (!confirm(`Are you sure you want to send this notification to ${targetDescription}?`)) {
-            return;
-        }
+        setConfirmMessage(`Are you sure you want to send this notification to ${targetDescription}?`);
+        setShowConfirmModal(true);
+    };
+
+    const handleConfirmSend = async () => {
+        setShowConfirmModal(false);
 
         setIsSending(true);
-        setResult(null);
 
         try {
             const token = localStorage.getItem('token');
@@ -140,16 +143,16 @@ export const AdminNotifications: React.FC = () => {
             const data = await response.json();
 
             if (response.ok) {
-                setResult({ success: true, message: data.message });
+                showToast(data.message || 'Notifications sent successfully!', 'success');
                 setSubject('');
                 setMessage('');
                 setSelectedUsers([]);
             } else {
-                setResult({ success: false, message: data.message || 'Failed to send notification' });
+                showToast(data.message || 'Failed to send notification', 'error');
             }
         } catch (error) {
             console.error('Error sending notification:', error);
-            setResult({ success: false, message: 'Error sending notification' });
+            showToast('Error sending notification. Please try again.', 'error');
         } finally {
             setIsSending(false);
         }
@@ -160,14 +163,6 @@ export const AdminNotifications: React.FC = () => {
             <h1 className="text-3xl font-bold text-gray-900 mb-8">Send Notifications</h1>
 
             <div className="bg-white rounded-2xl shadow-sm p-8">
-                {result && (
-                    <div className={`mb-6 p-4 rounded-xl flex items-center space-x-3 ${result.success ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
-                        }`}>
-                        {result.success && <CheckCircleIcon className="w-6 h-6" />}
-                        <span>{result.message}</span>
-                    </div>
-                )}
-
                 <div className="space-y-6">
                     {/* Target Audience */}
                     <div>
@@ -369,6 +364,30 @@ export const AdminNotifications: React.FC = () => {
                     </button>
                 </div>
             </div>
+
+            {/* Confirmation Modal */}
+            {showConfirmModal && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+                        <h3 className="text-xl font-bold text-gray-900 mb-4">Confirm Send</h3>
+                        <p className="text-gray-600 mb-6">{confirmMessage}</p>
+                        <div className="flex space-x-3">
+                            <button
+                                onClick={() => setShowConfirmModal(false)}
+                                className="flex-1 px-4 py-2 border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleConfirmSend}
+                                className="flex-1 px-4 py-2 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-xl font-medium hover:from-violet-700 hover:to-purple-700 transition-all"
+                            >
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

@@ -7,7 +7,8 @@ import {
     BuildingStorefrontIcon,
     BellIcon,
     ArrowLeftOnRectangleIcon,
-    ChartBarIcon
+    ChartBarIcon,
+    FlagIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../../contexts/AuthContext';
 import { AdminDashboard } from './AdminDashboard';
@@ -16,6 +17,7 @@ import { AdminPets } from './AdminPets';
 import { AdminStoreApprovals } from './AdminStoreApprovals';
 import { AdminNotifications } from './AdminNotifications';
 import { AdminVets } from './AdminVets';
+import { AdminReportedReviews } from './AdminReportedReviews';
 
 const navItems = [
     { path: '/admin', label: 'Dashboard', icon: ChartBarIcon },
@@ -23,19 +25,42 @@ const navItems = [
     { path: '/admin/pets', label: 'Pets', icon: HeartIcon },
     { path: '/admin/vets', label: 'Veterinarians', icon: HeartIcon },
     { path: '/admin/store-approvals', label: 'Store Approvals', icon: BuildingStorefrontIcon },
+    { path: '/admin/reported-reviews', label: 'Reported Reviews', icon: FlagIcon },
     { path: '/admin/notifications', label: 'Send Notifications', icon: BellIcon },
 ];
 
 export const AdminLayout: React.FC = () => {
     const { user, logout, isAdmin } = useAuth();
     const location = useLocation();
+    const [isInitializing, setIsInitializing] = React.useState(true);
+
+    // Wait for initial auth check to complete
+    React.useEffect(() => {
+        const timer = setTimeout(() => {
+            setIsInitializing(false);
+        }, 100); // Small delay to let AuthContext initialize
+        return () => clearTimeout(timer);
+    }, []);
+
+    console.log('AdminLayout render - user:', user?.email, 'isAdmin:', isAdmin, 'initializing:', isInitializing);
+
+    // Show loading while checking auth
+    if (isInitializing) {
+        return (
+            <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-violet-200 border-t-violet-600"></div>
+            </div>
+        );
+    }
 
     // Redirect non-admin users
     if (!user) {
+        console.log('AdminLayout: No user, redirecting to login');
         return <Navigate to="/login" replace />;
     }
 
     if (!isAdmin) {
+        console.log('AdminLayout: User is not admin, showing access denied');
         return (
             <div className="min-h-screen bg-gray-100 flex items-center justify-center">
                 <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md text-center">
@@ -121,6 +146,7 @@ export const AdminLayout: React.FC = () => {
                     <Route path="/pets" element={<AdminPets />} />
                     <Route path="/vets" element={<AdminVets />} />
                     <Route path="/store-approvals" element={<AdminStoreApprovals />} />
+                    <Route path="/reported-reviews" element={<AdminReportedReviews />} />
                     <Route path="/notifications" element={<AdminNotifications />} />
                 </Routes>
             </main>

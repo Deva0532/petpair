@@ -77,8 +77,8 @@ export const Header: React.FC<HeaderProps> = () => {
     };
     fetchNotifications();
 
-    // Poll for new notifications every 30 seconds
-    const interval = setInterval(fetchNotifications, 30000);
+    // Poll for new notifications every 5 seconds for real-time updates
+    const interval = setInterval(fetchNotifications, 5000);
     return () => clearInterval(interval);
   }, [user]);
 
@@ -97,6 +97,21 @@ export const Header: React.FC<HeaderProps> = () => {
       console.error('Failed to mark notification as read');
     }
   };
+
+  // Close notification dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (showNotifications && !target.closest('.notification-dropdown')) {
+        setShowNotifications(false);
+      }
+    };
+
+    if (showNotifications) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showNotifications]);
 
   const formatTimeAgo = (dateString: string) => {
     const date = new Date(dateString);
@@ -192,7 +207,7 @@ export const Header: React.FC<HeaderProps> = () => {
                   )}
                 </Link>
                 {/* Notification Bell */}
-                <div className="relative">
+                <div className="relative notification-dropdown">
                   <button
                     onClick={() => setShowNotifications(!showNotifications)}
                     className="relative flex items-center justify-center w-10 h-10 rounded-xl text-gray-600 hover:text-violet-600 hover:bg-violet-50 transition-all"
@@ -208,7 +223,7 @@ export const Header: React.FC<HeaderProps> = () => {
                   {/* Notification Dropdown */}
                   {showNotifications && (
                     <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50">
-                      <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                      <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between bg-white sticky top-0 z-10">
                         <h3 className="font-semibold text-gray-900">Notifications</h3>
                         <button
                           onClick={() => setShowNotifications(false)}
@@ -217,7 +232,7 @@ export const Header: React.FC<HeaderProps> = () => {
                           <XMarkIcon className="w-5 h-5" />
                         </button>
                       </div>
-                      <div className="max-h-96 overflow-y-auto">
+                      <div className="max-h-[400px] overflow-y-auto scroll-smooth" style={{ scrollbarWidth: 'thin', scrollbarColor: '#d1d5db #f3f4f6' }}>
                         {notifications.length === 0 ? (
                           <div className="p-4 text-center text-gray-500">
                             No notifications yet
@@ -227,13 +242,13 @@ export const Header: React.FC<HeaderProps> = () => {
                             <div
                               key={notification._id}
                               onClick={() => markAsRead(notification._id)}
-                              className={`px-4 py-3 border-b border-gray-50 cursor-pointer hover:bg-gray-50 ${!notification.read ? 'bg-violet-50' : ''}`}
+                              className={`px-4 py-3 border-b border-gray-50 cursor-pointer hover:bg-gray-50 transition-colors ${!notification.read ? 'bg-violet-50' : ''}`}
                             >
                               <div className="flex items-start justify-between">
                                 <h4 className={`text-sm font-medium ${!notification.read ? 'text-violet-800' : 'text-gray-800'}`}>
                                   {notification.title}
                                 </h4>
-                                <span className="text-xs text-gray-400">{formatTimeAgo(notification.createdAt)}</span>
+                                <span className="text-xs text-gray-400 flex-shrink-0 ml-2">{formatTimeAgo(notification.createdAt)}</span>
                               </div>
                               <p className="text-xs text-gray-600 mt-1 line-clamp-2">{notification.message}</p>
                             </div>
