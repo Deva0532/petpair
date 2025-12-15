@@ -5,6 +5,7 @@ import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { getPets, updatePet, deletePet, markPetAsSold, uploadImage } from '../../services/petService';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 import { Pet } from '../../types';
 
 const petTypes = [
@@ -29,9 +30,10 @@ interface EditModalProps {
   pet: Pet;
   onClose: () => void;
   onSave: (petId: string, data: any) => Promise<void>;
+  showToast: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void;
 }
 
-const EditPetModal: React.FC<EditModalProps> = ({ pet, onClose, onSave }) => {
+const EditPetModal: React.FC<EditModalProps> = ({ pet, onClose, onSave, showToast }) => {
   const [formData, setFormData] = useState({
     name: pet.name,
     type: pet.type,
@@ -97,7 +99,7 @@ const EditPetModal: React.FC<EditModalProps> = ({ pet, onClose, onSave }) => {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length + formData.imageUrls.length + newImages.length > 5) {
-      alert('Maximum 5 images allowed');
+      showToast('Maximum 5 images allowed', 'error');
       return;
     }
     setNewImages(prev => [...prev, ...files]);
@@ -162,8 +164,8 @@ const EditPetModal: React.FC<EditModalProps> = ({ pet, onClose, onSave }) => {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
                 className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all ${activeTab === tab.id
-                    ? 'bg-white text-violet-700 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-white text-violet-700 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
                   }`}
               >
                 {tab.label}
@@ -508,6 +510,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({ title, message, confirmText
 
 export const MyPetsTab: React.FC = () => {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [pets, setPets] = useState<Pet[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingPet, setEditingPet] = useState<Pet | null>(null);
@@ -667,7 +670,7 @@ export const MyPetsTab: React.FC = () => {
         </div>
       )}
 
-      {editingPet && <EditPetModal pet={editingPet} onClose={() => setEditingPet(null)} onSave={handleUpdatePet} />}
+      {editingPet && <EditPetModal pet={editingPet} onClose={() => setEditingPet(null)} onSave={handleUpdatePet} showToast={showToast} />}
       {deletingPet && (
         <ConfirmModal
           title="Delete Pet"

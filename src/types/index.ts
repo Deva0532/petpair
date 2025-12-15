@@ -86,9 +86,14 @@ export interface Veterinarian {
   address: string;
   phone: string;
   image: string;
+  website?: string;
+  directionsUrl?: string;
   emergencyService: boolean;
   availableDays?: string[];
   availableTime?: string;
+  yearsInBusiness?: string;
+  onSiteServices?: boolean;
+  review?: string;
 }
 
 export interface Message {

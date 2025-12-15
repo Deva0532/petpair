@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { TrashIcon, MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { useToast } from '../../contexts/ToastContext';
 
 const API_BASE_URL = 'http://localhost:5000';
 
@@ -21,6 +22,7 @@ interface Pet {
 }
 
 export const AdminPets: React.FC = () => {
+    const { showToast } = useToast();
     const [pets, setPets] = useState<Pet[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -93,13 +95,14 @@ export const AdminPets: React.FC = () => {
                 setShowDeleteModal(false);
                 setPetToDelete(null);
                 setDeleteReason('');
+                showToast('Pet listing deleted successfully!', 'success');
             } else {
                 const data = await response.json();
-                alert(data.message || 'Failed to delete pet');
+                showToast(data.message || 'Failed to delete pet', 'error');
             }
         } catch (error) {
             console.error('Error deleting pet:', error);
-            alert('Error deleting pet');
+            showToast('Error deleting pet', 'error');
         } finally {
             setIsDeleting(false);
         }

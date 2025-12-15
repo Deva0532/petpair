@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircleIcon, XCircleIcon, BuildingStorefrontIcon, MapPinIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
+import { useToast } from '../../contexts/ToastContext';
 
 const API_BASE_URL = 'http://localhost:5000';
 
@@ -17,6 +18,7 @@ interface PendingStore {
 }
 
 export const AdminStoreApprovals: React.FC = () => {
+    const { showToast } = useToast();
     const [pendingStores, setPendingStores] = useState<PendingStore[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [processing, setProcessing] = useState<string | null>(null);
@@ -55,13 +57,14 @@ export const AdminStoreApprovals: React.FC = () => {
 
             if (response.ok) {
                 setPendingStores(pendingStores.filter(s => s._id !== storeId));
+                showToast(`Store ${action === 'approve' ? 'approved' : 'rejected'} successfully!`, 'success');
             } else {
                 const data = await response.json();
-                alert(data.message || `Failed to ${action} store`);
+                showToast(data.message || `Failed to ${action} store`, 'error');
             }
         } catch (error) {
             console.error(`Error ${action}ing store:`, error);
-            alert(`Error ${action}ing store`);
+            showToast(`Error ${action}ing store`, 'error');
         } finally {
             setProcessing(null);
         }

@@ -27,7 +27,7 @@ function App() {
       <AuthProvider>
         <ToastProvider>
           <Router>
-            <div className="min-h-screen bg-gray-50">
+            <div className="min-h-screen bg-gray-50 flex flex-col">
               <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
@@ -35,20 +35,22 @@ function App() {
                 <Route path="/select-user-type" element={<UserTypeSelection />} />
                 <Route path="/admin/*" element={<AdminLayout />} />
                 <Route path="/*" element={
-                  <>
+                  <div className="flex flex-col min-h-screen">
                     <Header />
-                    <Routes>
-                      <Route path="/" element={<Home />} />
-                      <Route path="/add-pet" element={<AddPet />} />
-                      <Route path="/pet/:id" element={<PetDetails />} />
-                      <Route path="/vets" element={<Vets />} />
-                      <Route path="/messages" element={<Messages />} />
-                      <Route path="/profile" element={<UserProfile />} />
-                      <Route path="/wishlist" element={<Wishlist />} />
-                      <Route path="/stores" element={<PetStores />} />
-                      <Route path="/stores/:id" element={<StoreDetails />} />
-                    </Routes>
-                  </>
+                    <main className="flex-grow">
+                      <Routes>
+                        <Route path="/" element={<Home />} />
+                        <Route path="/add-pet" element={<AddPet />} />
+                        <Route path="/pet/:id" element={<PetDetails />} />
+                        <Route path="/vets" element={<Vets />} />
+                        <Route path="/messages" element={<Messages />} />
+                        <Route path="/profile" element={<UserProfile />} />
+                        <Route path="/wishlist" element={<Wishlist />} />
+                        <Route path="/stores" element={<PetStores />} />
+                        <Route path="/stores/:id" element={<StoreDetails />} />
+                      </Routes>
+                    </main>
+                  </div>
                 } />
               </Routes>
             </div>

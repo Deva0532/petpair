@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { CameraIcon, MapPinIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 
 interface UserStats {
   petsListed: number;
@@ -16,6 +17,7 @@ interface ProfileHeaderProps {
 
 export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ onPhotoChange }) => {
   const { user, updateProfile } = useAuth();
+  const { showToast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [stats, setStats] = useState<UserStats>({
@@ -58,13 +60,13 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ onPhotoChange }) =
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
+      showToast('Please select an image file', 'error');
       return;
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      alert('Image size should be less than 5MB');
+      showToast('Image size should be less than 5MB', 'error');
       return;
     }
 
@@ -81,19 +83,20 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ onPhotoChange }) =
         if (success) {
           setCurrentAvatar(base64String);
           onPhotoChange?.(base64String);
+          showToast('Profile photo updated successfully!', 'success');
         } else {
-          alert('Failed to update profile photo');
+          showToast('Failed to update profile photo', 'error');
         }
         setIsUploading(false);
       };
       reader.onerror = () => {
-        alert('Error reading file');
+        showToast('Error reading file', 'error');
         setIsUploading(false);
       };
       reader.readAsDataURL(file);
     } catch (error) {
       console.error('Error uploading photo:', error);
-      alert('Error uploading photo');
+      showToast('Error uploading photo', 'error');
       setIsUploading(false);
     }
 

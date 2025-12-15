@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { PaperAirplaneIcon, CheckCircleIcon, MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { useToast } from '../../contexts/ToastContext';
 
 const API_BASE_URL = 'http://localhost:5000';
 
@@ -12,6 +13,7 @@ interface User {
 }
 
 export const AdminNotifications: React.FC = () => {
+    const { showToast } = useToast();
     const [subject, setSubject] = useState('');
     const [message, setMessage] = useState('');
     const [targetType, setTargetType] = useState<'all' | 'individual' | 'store' | 'selected'>('all');
@@ -97,12 +99,12 @@ export const AdminNotifications: React.FC = () => {
 
     const handleSend = async () => {
         if (!subject.trim() || !message.trim()) {
-            alert('Please enter both subject and message');
+            showToast('Please enter both subject and message', 'error');
             return;
         }
 
         if ((targetType === 'individual' || targetType === 'store') && selectedUsers.length === 0) {
-            alert('Please select at least one user');
+            showToast('Please select at least one user', 'error');
             return;
         }
 
@@ -174,8 +176,8 @@ export const AdminNotifications: React.FC = () => {
                             <button
                                 onClick={() => setTargetType('all')}
                                 className={`p-4 rounded-xl border-2 text-left transition-all ${targetType === 'all'
-                                        ? 'border-violet-500 bg-violet-50'
-                                        : 'border-gray-200 hover:border-violet-300'
+                                    ? 'border-violet-500 bg-violet-50'
+                                    : 'border-gray-200 hover:border-violet-300'
                                     }`}
                             >
                                 <div className="font-medium text-gray-900">All Users</div>
@@ -184,8 +186,8 @@ export const AdminNotifications: React.FC = () => {
                             <button
                                 onClick={() => setTargetType('individual')}
                                 className={`p-4 rounded-xl border-2 text-left transition-all ${targetType === 'individual'
-                                        ? 'border-blue-500 bg-blue-50'
-                                        : 'border-gray-200 hover:border-blue-300'
+                                    ? 'border-blue-500 bg-blue-50'
+                                    : 'border-gray-200 hover:border-blue-300'
                                     }`}
                             >
                                 <div className="font-medium text-gray-900">Individual Owners</div>
@@ -194,8 +196,8 @@ export const AdminNotifications: React.FC = () => {
                             <button
                                 onClick={() => setTargetType('store')}
                                 className={`p-4 rounded-xl border-2 text-left transition-all ${targetType === 'store'
-                                        ? 'border-pink-500 bg-pink-50'
-                                        : 'border-gray-200 hover:border-pink-300'
+                                    ? 'border-pink-500 bg-pink-50'
+                                    : 'border-gray-200 hover:border-pink-300'
                                     }`}
                             >
                                 <div className="font-medium text-gray-900">Store Owners</div>

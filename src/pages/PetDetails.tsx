@@ -141,10 +141,13 @@ export const PetDetails: React.FC = () => {
             window.open(`https://wa.me/${pet.owner.phone}`, '_blank');
         }
     };
-    const handleContact = () => { if (!user) { navigate('/login'); return; } alert('Contact feature coming soon!'); };
+    const handleContact = () => {
+        if (!user) { navigate('/login'); return; }
+        showToast('Contact feature coming soon!', 'info');
+    };
     const handleShare = () => {
         if (navigator.share) { navigator.share({ title: `${pet.name} - ${pet.breed}`, text: `Check out ${pet.name}!`, url: window.location.href }); }
-        else { navigator.clipboard.writeText(window.location.href); alert('Link copied!'); }
+        else { navigator.clipboard.writeText(window.location.href); showToast('Link copied to clipboard!', 'success'); }
     };
 
     const displayType = pet.type === 'other' && pet.customType ? pet.customType : pet.type;

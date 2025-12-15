@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { PlusIcon, PencilIcon, TrashIcon, XMarkIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { useToast } from '../../contexts/ToastContext';
 
 const API_BASE_URL = 'http://localhost:5000';
 
@@ -35,6 +36,7 @@ const SPECIALTIES = [
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 export const AdminVets: React.FC = () => {
+    const { showToast } = useToast();
     const [vets, setVets] = useState<Vet[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -119,7 +121,7 @@ export const AdminVets: React.FC = () => {
 
     const handleSubmit = async () => {
         if (!formData.name.trim()) {
-            alert('Vet name is required');
+            showToast('Vet name is required', 'error');
             return;
         }
 
@@ -143,13 +145,14 @@ export const AdminVets: React.FC = () => {
             if (response.ok) {
                 setShowModal(false);
                 fetchVets();
+                showToast(editingVet ? 'Vet updated successfully!' : 'Vet added successfully!', 'success');
             } else {
                 const data = await response.json();
-                alert(data.message || 'Failed to save vet');
+                showToast(data.message || 'Failed to save vet', 'error');
             }
         } catch (error) {
             console.error('Error saving vet:', error);
-            alert('Error saving vet');
+            showToast('Error saving vet', 'error');
         } finally {
             setIsSaving(false);
         }
@@ -167,13 +170,14 @@ export const AdminVets: React.FC = () => {
 
             if (response.ok) {
                 setVets(vets.filter(v => v._id !== vet._id));
+                showToast('Vet deleted successfully!', 'success');
             } else {
                 const data = await response.json();
-                alert(data.message || 'Failed to delete vet');
+                showToast(data.message || 'Failed to delete vet', 'error');
             }
         } catch (error) {
             console.error('Error deleting vet:', error);
-            alert('Error deleting vet');
+            showToast('Error deleting vet', 'error');
         }
     };
 

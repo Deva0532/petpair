@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { TrashIcon, MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { useToast } from '../../contexts/ToastContext';
 
 const API_BASE_URL = 'http://localhost:5000';
 
@@ -16,6 +17,7 @@ interface User {
 }
 
 export const AdminUsers: React.FC = () => {
+    const { showToast } = useToast();
     const [users, setUsers] = useState<User[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -88,13 +90,14 @@ export const AdminUsers: React.FC = () => {
                 setShowDeleteModal(false);
                 setUserToDelete(null);
                 setDeleteReason('');
+                showToast('User deleted successfully!', 'success');
             } else {
                 const data = await response.json();
-                alert(data.message || 'Failed to delete user');
+                showToast(data.message || 'Failed to delete user', 'error');
             }
         } catch (error) {
             console.error('Error deleting user:', error);
-            alert('Error deleting user');
+            showToast('Error deleting user', 'error');
         } finally {
             setIsDeleting(false);
         }
@@ -168,8 +171,8 @@ export const AdminUsers: React.FC = () => {
                                     </td>
                                     <td className="px-6 py-4">
                                         <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${user.userType === 'store'
-                                                ? 'bg-violet-100 text-violet-800'
-                                                : 'bg-blue-100 text-blue-800'
+                                            ? 'bg-violet-100 text-violet-800'
+                                            : 'bg-blue-100 text-blue-800'
                                             }`}>
                                             {user.userType === 'store' ? 'Store Owner' : 'Individual'}
                                         </span>
