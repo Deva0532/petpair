@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FunnelIcon, XMarkIcon, ChevronDownIcon, ChevronUpIcon, AdjustmentsHorizontalIcon } from '@heroicons/react/24/outline';
+import { FunnelIcon, XMarkIcon, ChevronDownIcon, ChevronUpIcon, AdjustmentsHorizontalIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 
 interface FilterOptions {
   type: string;
@@ -77,109 +77,62 @@ export const PetFilters: React.FC<PetFiltersProps> = ({ filters, onFiltersChange
     });
   };
 
-  const activeFiltersCount = [
-    filters.type !== 'all',
-    filters.breed !== '',
-    filters.gender !== 'any',
-    filters.sizePreference !== 'any',
-    filters.activityLevel !== 'any',
-    filters.location !== '',
-    filters.vaccinated !== undefined,
-    filters.goodWithKids !== undefined,
-    filters.goodWithPets !== undefined,
-    filters.houseTrained !== undefined,
-    filters.spayedNeutered !== undefined,
-    filters.specialNeeds !== undefined,
-  ].filter(Boolean).length;
-
   return (
-    <div className="bg-white rounded-2xl shadow-xl border border-violet-100 overflow-hidden">
+    <div className="bg-white rounded-3xl shadow-lg shadow-violet-50 overflow-hidden border border-gray-100">
       {/* Header */}
-      <div className="bg-gradient-to-r from-violet-600 to-purple-600 px-6 py-4">
+      <div className="bg-white px-6 py-5 border-b border-gray-100">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="bg-white/20 p-2 rounded-lg">
-              <FunnelIcon className="w-5 h-5 text-white" />
+            <div className="bg-violet-50 p-2.5 rounded-xl">
+              <FunnelIcon className="w-5 h-5 text-violet-600" />
             </div>
-            <div>
-              <h3 className="text-lg font-semibold text-white">Filters</h3>
-              {activeFiltersCount > 0 && (
-                <span className="text-xs text-violet-200">{activeFiltersCount} active</span>
-              )}
-            </div>
+            <h3 className="text-lg font-bold text-gray-900">Filters</h3>
           </div>
-          <div className="flex items-center space-x-2">
-            <button onClick={clearFilters} className="text-white/80 hover:text-white text-sm font-medium transition-colors">
-              Clear All
-            </button>
-            <button onClick={() => setIsExpanded(!isExpanded)} className="md:hidden bg-white/20 p-2 rounded-lg text-white">
-              {isExpanded ? <XMarkIcon className="w-4 h-4" /> : <AdjustmentsHorizontalIcon className="w-4 h-4" />}
-            </button>
-          </div>
+          <button
+            onClick={clearFilters}
+            className="flex items-center text-gray-400 hover:text-rose-500 text-xs font-semibold uppercase tracking-wide transition-colors group"
+          >
+            <ArrowPathIcon className="w-3 h-3 mr-1 group-hover:rotate-180 transition-transform duration-300" />
+            Reset
+          </button>
         </div>
       </div>
 
-      <div className={`p-6 space-y-5 ${!isExpanded ? 'hidden md:block' : ''}`}>
-        {/* Pet Type */}
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Pet Type</label>
-          <div className="grid grid-cols-4 gap-2">
-            {petTypes.slice(0, 4).map((type) => (
-              <button key={type} onClick={() => handleTypeChange(type)}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${filters.type === type ? 'bg-violet-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-violet-50 hover:text-violet-700'}`}
-              >
-                {type === 'all' ? 'All' : type.charAt(0).toUpperCase() + type.slice(1)}
-              </button>
-            ))}
-          </div>
-          <div className="grid grid-cols-3 gap-2 mt-2">
-            {petTypes.slice(4).map((type) => (
-              <button key={type} onClick={() => handleTypeChange(type)}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${filters.type === type ? 'bg-violet-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-violet-50 hover:text-violet-700'}`}
-              >
-                {type.charAt(0).toUpperCase() + type.slice(1)}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Breed */}
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Breed</label>
-          <select value={filters.breed} onChange={(e) => updateFilter('breed', e.target.value)}
-            className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 focus:ring-2 focus:ring-violet-500 focus:border-violet-500 bg-gray-50"
-          >
-            {availableBreeds.map((breed) => (
-              <option key={breed} value={breed === 'All Breeds' ? '' : breed}>{breed}</option>
-            ))}
-          </select>
-        </div>
+      <div className={`p-6 space-y-8 ${!isExpanded ? 'hidden md:block' : ''}`}>
 
         {/* Gender */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Gender</label>
-          <div className="grid grid-cols-3 gap-2">
+          <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Gender</label>
+          <div className="flex bg-gray-50 p-1 rounded-xl">
             {[
-              { value: 'any', label: 'Any', icon: '🐾' },
-              { value: 'male', label: 'Male', icon: '♂️' },
-              { value: 'female', label: 'Female', icon: '♀️' }
+              { value: 'any', label: 'Any' },
+              { value: 'male', label: 'Male' },
+              { value: 'female', label: 'Female' }
             ].map((g) => (
-              <button key={g.value} onClick={() => updateFilter('gender', g.value)}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-1 ${filters.gender === g.value ? 'bg-violet-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-violet-50 hover:text-violet-700'}`}
+              <button
+                key={g.value}
+                onClick={() => updateFilter('gender', g.value)}
+                className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${filters.gender === g.value
+                    ? 'bg-white text-violet-600 shadow-sm ring-1 ring-black/5'
+                    : 'text-gray-500 hover:text-gray-700'
+                  }`}
               >
-                <span>{g.icon}</span> {g.label}
+                {g.label}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Size Preference */}
+        {/* Size */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Size</label>
+          <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Size</label>
           <div className="grid grid-cols-2 gap-2">
             {[{ value: 'any', label: 'Any' }, { value: 'small', label: 'Small' }, { value: 'medium', label: 'Medium' }, { value: 'large', label: 'Large' }].map((size) => (
               <button key={size.value} onClick={() => updateFilter('sizePreference', size.value)}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${filters.sizePreference === size.value ? 'bg-violet-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-violet-50 hover:text-violet-700'}`}
+                className={`px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${filters.sizePreference === size.value
+                    ? 'bg-violet-600 text-white shadow-lg shadow-violet-200'
+                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                  }`}
               >
                 {size.label}
               </button>
@@ -189,13 +142,16 @@ export const PetFilters: React.FC<PetFiltersProps> = ({ filters, onFiltersChange
 
         {/* Activity Level */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Activity Level</label>
+          <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Activity Level</label>
           <div className="grid grid-cols-2 gap-2">
-            {[{ value: 'any', label: 'Any', icon: '🎯' }, { value: 'low', label: 'Low', icon: '😴' }, { value: 'moderate', label: 'Moderate', icon: '🚶' }, { value: 'high', label: 'High', icon: '🏃' }].map((level) => (
+            {[{ value: 'any', label: 'Any' }, { value: 'low', label: 'Low' }, { value: 'moderate', label: 'Moderate' }, { value: 'high', label: 'High' }].map((level) => (
               <button key={level.value} onClick={() => updateFilter('activityLevel', level.value)}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-1 ${filters.activityLevel === level.value ? 'bg-violet-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-violet-50 hover:text-violet-700'}`}
+                className={`px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${filters.activityLevel === level.value
+                    ? 'bg-violet-600 text-white shadow-lg shadow-violet-200'
+                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                  }`}
               >
-                <span>{level.icon}</span> {level.label}
+                {level.label}
               </button>
             ))}
           </div>
@@ -203,15 +159,21 @@ export const PetFilters: React.FC<PetFiltersProps> = ({ filters, onFiltersChange
 
         {/* Age Range */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Age Range (years)</label>
-          <div className="grid grid-cols-2 gap-3">
-            <input type="number" placeholder="Min" value={filters.minAge}
+          <div className="flex items-center justify-between mb-3">
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Age (Years)</label>
+            <span className="text-xs font-semibold text-violet-600 bg-violet-50 px-2 py-0.5 rounded-md">
+              {filters.minAge} - {filters.maxAge}
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <input type="number" placeholder="0" value={filters.minAge}
               onChange={(e) => updateFilter('minAge', parseInt(e.target.value) || 0)}
-              className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 focus:ring-2 focus:ring-violet-500 bg-gray-50"
+              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-center focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none bg-gray-50"
             />
-            <input type="number" placeholder="Max" value={filters.maxAge}
+            <span className="text-gray-300">-</span>
+            <input type="number" placeholder="20" value={filters.maxAge}
               onChange={(e) => updateFilter('maxAge', parseInt(e.target.value) || 20)}
-              className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 focus:ring-2 focus:ring-violet-500 bg-gray-50"
+              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-center focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none bg-gray-50"
             />
           </div>
         </div>
@@ -219,88 +181,74 @@ export const PetFilters: React.FC<PetFiltersProps> = ({ filters, onFiltersChange
         {/* Price Range */}
         {activeTab === 'sell' && (
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Price Range (₹)</label>
-            <div className="grid grid-cols-2 gap-3">
+            <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Price Range (₹)</label>
+            <div className="flex items-center gap-3">
               <input type="number" placeholder="Min" value={filters.minPrice}
                 onChange={(e) => updateFilter('minPrice', parseInt(e.target.value) || 0)}
-                className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 focus:ring-2 focus:ring-violet-500 bg-gray-50"
+                className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-center focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none bg-gray-50"
               />
+              <span className="text-gray-300">-</span>
               <input type="number" placeholder="Max" value={filters.maxPrice}
                 onChange={(e) => updateFilter('maxPrice', parseInt(e.target.value) || 500000)}
-                className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 focus:ring-2 focus:ring-violet-500 bg-gray-50"
+                className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-center focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none bg-gray-50"
               />
             </div>
           </div>
         )}
 
-        {/* Advanced Options */}
-        <div className="border-2 border-gray-100 rounded-xl overflow-hidden">
+        {/* Advanced Options Toggle */}
+        <div>
           <button type="button" onClick={() => setIsAdvancedOpen(!isAdvancedOpen)}
-            className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+            className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors group"
           >
-            <div className="flex items-center gap-2">
-              <AdjustmentsHorizontalIcon className="w-5 h-5 text-violet-600" />
-              <span className="text-sm font-semibold text-gray-700">Advanced Options</span>
-            </div>
-            {isAdvancedOpen ? <ChevronUpIcon className="w-5 h-5 text-gray-500" /> : <ChevronDownIcon className="w-5 h-5 text-gray-500" />}
+            <span className="text-sm font-bold text-gray-700">Advanced Filters</span>
+            <ChevronDownIcon className={`w-4 h-4 text-gray-500 transition-transform duration-300 ${isAdvancedOpen ? 'rotate-180' : ''}`} />
           </button>
 
           {isAdvancedOpen && (
-            <div className="p-4 space-y-4 bg-white border-t border-gray-100">
-              {/* Location */}
+            <div className="mt-4 space-y-4 animate-slideDown">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">📍 Location</label>
-                <input type="text" placeholder="Enter city or zip code" value={filters.location}
-                  onChange={(e) => updateFilter('location', e.target.value)}
-                  className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 focus:ring-2 focus:ring-violet-500 bg-gray-50"
-                />
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Pet Type</label>
+                <select value={filters.type} onChange={(e) => handleTypeChange(e.target.value)}
+                  className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-700 focus:ring-2 focus:ring-violet-500 bg-white"
+                >
+                  {petTypes.map(type => <option key={type} value={type}>{type.charAt(0).toUpperCase() + type.slice(1)}</option>)}
+                </select>
               </div>
 
-              {/* Checkboxes */}
-              <div className="space-y-3">
-                <label className="flex items-center gap-3 cursor-pointer group">
-                  <input type="checkbox" checked={filters.vaccinated === true}
-                    onChange={(e) => updateFilter('vaccinated', e.target.checked ? true : undefined)}
-                    className="w-5 h-5 rounded border-gray-300 text-violet-600 focus:ring-violet-500"
-                  />
-                  <span className="text-sm text-gray-700 group-hover:text-violet-700">💉 Vaccinated only</span>
-                </label>
-
-                {activeTab === 'sell' && (
-                  <label className="flex items-center gap-3 cursor-pointer group">
-                    <input type="checkbox" checked={filters.availableForMating === true}
-                      onChange={(e) => updateFilter('availableForMating', e.target.checked ? true : undefined)}
-                      className="w-5 h-5 rounded border-gray-300 text-violet-600 focus:ring-violet-500"
-                    />
-                    <span className="text-sm text-gray-700 group-hover:text-violet-700">💕 Also available for mating</span>
-                  </label>
-                )}
+              <div>
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Breed</label>
+                <select value={filters.breed} onChange={(e) => updateFilter('breed', e.target.value)}
+                  className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-700 focus:ring-2 focus:ring-violet-500 bg-white"
+                >
+                  {availableBreeds.map(breed => <option key={breed} value={breed === 'All Breeds' ? '' : breed}>{breed}</option>)}
+                </select>
               </div>
 
-              {/* Pet Characteristics */}
-              <div className="pt-3 border-t border-gray-100">
-                <label className="block text-sm font-medium text-gray-700 mb-3">Pet Characteristics</label>
-                <div className="space-y-3">
-                  {[
-                    { key: 'goodWithKids', label: '👶 Good with Kids' },
-                    { key: 'goodWithPets', label: '🐾 Good with Other Pets' },
-                    { key: 'houseTrained', label: '🏠 House Trained' },
-                    { key: 'spayedNeutered', label: '✂️ Spayed/Neutered' },
-                    { key: 'specialNeeds', label: '🩺 Open to Special Needs' }
-                  ].map((item) => (
-                    <label key={item.key} className="flex items-center gap-3 cursor-pointer group">
+              <div className="space-y-3 pt-2">
+                {[
+                  { key: 'vaccinated', label: '💉 Vaccinated' },
+                  { key: 'goodWithKids', label: '👶 Good with Kids' },
+                  { key: 'houseTrained', label: '🏠 House Trained' },
+                ].map((item) => (
+                  <label key={item.key} className="flex items-center gap-3 cursor-pointer group">
+                    <div className="relative flex items-center">
                       <input type="checkbox" checked={filters[item.key as keyof FilterOptions] === true}
                         onChange={(e) => updateFilter(item.key as keyof FilterOptions, e.target.checked ? true : undefined)}
-                        className="w-5 h-5 rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+                        className="peer h-5 w-5 cursor-pointer appearance-none rounded-lg border border-gray-300 transition-all checked:border-violet-600 checked:bg-violet-600"
                       />
-                      <span className="text-sm text-gray-700 group-hover:text-violet-700">{item.label}</span>
-                    </label>
-                  ))}
-                </div>
+                      <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-white opacity-0 transition-opacity peer-checked:opacity-100">
+                        <svg stroke="currentColor" fill="none" strokeWidth="3" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                      </div>
+                    </div>
+                    <span className="text-sm font-medium text-gray-600 group-hover:text-violet-700 transition-colors">{item.label}</span>
+                  </label>
+                ))}
               </div>
             </div>
           )}
         </div>
+
       </div>
     </div>
   );

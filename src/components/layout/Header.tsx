@@ -128,14 +128,14 @@ export const Header: React.FC<HeaderProps> = () => {
 
   return (
     <header className={`sticky top-0 z-50 transition-all duration-300 ${isScrolled
-      ? 'bg-white/95 backdrop-blur-lg shadow-lg border-b border-violet-100'
-      : 'bg-white shadow-sm border-b border-gray-200'
+      ? 'bg-white shadow-lg border-b border-gray-100'
+      : 'bg-white shadow-sm border-b border-gray-100'
       }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-20">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2 group">
-            <div className="relative w-10 h-10 transition-transform group-hover:scale-110">
+            <div className="relative w-8 h-8 transition-transform group-hover:scale-110">
               <svg viewBox="0 0 50 50" className="w-full h-full">
                 <defs>
                   <linearGradient id="pawGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -161,47 +161,44 @@ export const Header: React.FC<HeaderProps> = () => {
                 </g>
               </svg>
             </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-violet-600 to-pink-500 bg-clip-text text-transparent">Peto</span>
+            <span className="text-2xl font-bold text-gray-900">Pet<span className="text-violet-600">Pair</span></span>
           </Link>
 
           {/* Search Bar - Desktop */}
-          <div className="hidden md:flex flex-1 max-w-xl mx-8">
+          <div className="hidden md:flex flex-1 max-w-xl mx-12">
             <div className="relative w-full group">
-              <MagnifyingGlassIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-violet-500 transition-colors" />
+              <MagnifyingGlassIcon className="absolute left-5 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-300 group-focus-within:text-violet-500 transition-colors" />
               <input
                 type="text"
                 placeholder="Search pets, breeds, locations..."
-                className="w-full pl-12 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 focus:bg-white transition-all text-sm"
+                className="w-full pl-12 pr-6 py-3 bg-gray-50 border-0 rounded-full focus:ring-0 focus:bg-gray-100 transition-all text-sm font-medium text-gray-700 placeholder-gray-400"
               />
             </div>
           </div>
 
           {/* Navigation - Desktop */}
-          <div className="hidden md:flex items-center space-x-2">
+          <div className="hidden md:flex items-center space-x-3">
             {user ? (
               <>
                 <Link
                   to="/add-pet"
-                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-xl font-medium hover:from-violet-700 hover:to-purple-700 transition-all shadow-md hover:shadow-lg"
+                  className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-full font-bold hover:shadow-lg hover:shadow-violet-200 transition-all transform hover:-translate-y-0.5"
                 >
                   <PlusCircleIcon className="w-5 h-5" />
                   <span>Post Pet</span>
                 </Link>
-                <Link to="/vets" className="px-4 py-2 text-gray-600 hover:text-violet-600 hover:bg-violet-50 rounded-xl transition-all font-medium">
+                <Link to="/vets" className="px-4 py-2 text-gray-600 hover:text-gray-900 font-semibold transition-colors">
                   Find Vets
                 </Link>
-                <Link to="/stores" className="px-4 py-2 text-gray-600 hover:text-violet-600 hover:bg-violet-50 rounded-xl transition-all font-medium">
-                  Pet Stores
-                </Link>
                 {isAdmin && (
-                  <Link to="/admin" className="px-4 py-2 text-violet-600 hover:text-violet-700 hover:bg-violet-50 rounded-xl transition-all font-medium">
+                  <Link to="/admin" className="px-4 py-2 text-violet-600 hover:text-violet-700 font-semibold">
                     Admin
                   </Link>
                 )}
-                <Link to="/wishlist" className="relative flex items-center justify-center w-10 h-10 rounded-xl text-gray-600 hover:text-rose-500 hover:bg-rose-50 transition-all">
-                  <HeartIcon className="w-6 h-6" />
+                <Link to="/wishlist" className="relative p-2 text-gray-400 hover:text-rose-500 transition-colors">
+                  <HeartIcon className="w-7 h-7" />
                   {wishlistCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold shadow-md">
+                    <span className="absolute top-1 right-0 bg-rose-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold border-2 border-white">
                       {wishlistCount > 9 ? '9+' : wishlistCount}
                     </span>
                   )}
@@ -210,11 +207,11 @@ export const Header: React.FC<HeaderProps> = () => {
                 <div className="relative notification-dropdown">
                   <button
                     onClick={() => setShowNotifications(!showNotifications)}
-                    className="relative flex items-center justify-center w-10 h-10 rounded-xl text-gray-600 hover:text-violet-600 hover:bg-violet-50 transition-all"
+                    className="relative p-2 text-gray-400 hover:text-gray-900 transition-colors"
                   >
-                    <BellIcon className="w-6 h-6" />
+                    <BellIcon className="w-7 h-7" />
                     {unreadCount > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-violet-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold shadow-md">
+                      <span className="absolute top-1 right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold border-2 border-white">
                         {unreadCount > 9 ? '9+' : unreadCount}
                       </span>
                     )}
@@ -222,9 +219,9 @@ export const Header: React.FC<HeaderProps> = () => {
 
                   {/* Notification Dropdown */}
                   {showNotifications && (
-                    <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50">
-                      <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between bg-white sticky top-0 z-10">
-                        <h3 className="font-semibold text-gray-900">Notifications</h3>
+                    <div className="absolute right-0 mt-4 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50 animate-fadeIn">
+                      <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between bg-white sticky top-0 z-10">
+                        <h3 className="font-bold text-gray-900">Notifications</h3>
                         <button
                           onClick={() => setShowNotifications(false)}
                           className="text-gray-400 hover:text-gray-600"
@@ -232,9 +229,9 @@ export const Header: React.FC<HeaderProps> = () => {
                           <XMarkIcon className="w-5 h-5" />
                         </button>
                       </div>
-                      <div className="max-h-[400px] overflow-y-auto scroll-smooth" style={{ scrollbarWidth: 'thin', scrollbarColor: '#d1d5db #f3f4f6' }}>
+                      <div className="max-h-[400px] overflow-y-auto scroll-smooth">
                         {notifications.length === 0 ? (
-                          <div className="p-4 text-center text-gray-500">
+                          <div className="p-8 text-center text-gray-500">
                             No notifications yet
                           </div>
                         ) : (
@@ -242,15 +239,15 @@ export const Header: React.FC<HeaderProps> = () => {
                             <div
                               key={notification._id}
                               onClick={() => markAsRead(notification._id)}
-                              className={`px-4 py-3 border-b border-gray-50 cursor-pointer hover:bg-gray-50 transition-colors ${!notification.read ? 'bg-violet-50' : ''}`}
+                              className={`px-5 py-4 border-b border-gray-50 cursor-pointer hover:bg-gray-50 transition-colors ${!notification.read ? 'bg-violet-50/50' : ''}`}
                             >
-                              <div className="flex items-start justify-between">
-                                <h4 className={`text-sm font-medium ${!notification.read ? 'text-violet-800' : 'text-gray-800'}`}>
+                              <div className="flex items-start justify-between mb-1">
+                                <h4 className={`text-sm font-semibold ${!notification.read ? 'text-violet-900' : 'text-gray-900'}`}>
                                   {notification.title}
                                 </h4>
-                                <span className="text-xs text-gray-400 flex-shrink-0 ml-2">{formatTimeAgo(notification.createdAt)}</span>
+                                <span className="text-[10px] text-gray-400 font-medium ml-2 uppercase tracking-wide">{formatTimeAgo(notification.createdAt)}</span>
                               </div>
-                              <p className="text-xs text-gray-600 mt-1 line-clamp-2">{notification.message}</p>
+                              <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">{notification.message}</p>
                             </div>
                           ))
                         )}
@@ -260,38 +257,40 @@ export const Header: React.FC<HeaderProps> = () => {
                 </div>
 
                 {/* User Dropdown */}
-                <div className="relative group">
-                  <button className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-100 transition-all">
-                    <div className="w-8 h-8 bg-gradient-to-br from-violet-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                <div className="relative group ml-2">
+                  <button className="flex items-center gap-3 pl-2 pr-1 py-1 rounded-full hover:bg-gray-50 transition-all border border-transparent hover:border-gray-100">
+                    <div className="w-9 h-9 bg-gradient-to-br from-violet-500 to-fuchsia-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm">
                       {user.name?.charAt(0).toUpperCase() || 'U'}
                     </div>
-                    <span className="text-sm font-medium text-gray-700 hidden lg:block">{user.name?.split(' ')[0]}</span>
+                    <span className="text-sm font-bold text-gray-700 hidden lg:block uppercase tracking-wide text-[11px]">{user.name?.split(' ')[0]}</span>
                   </button>
-                  <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-xl py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 border border-gray-100">
-                    <div className="px-4 py-3 border-b border-gray-100">
-                      <p className="text-sm font-semibold text-gray-900">{user.name}</p>
-                      <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                  <div className="absolute right-0 mt-4 w-60 bg-white rounded-2xl shadow-xl py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 border border-gray-100 transform origin-top-right">
+                    <div className="px-6 py-4 border-b border-gray-50">
+                      <p className="text-sm font-bold text-gray-900">{user.name}</p>
+                      <p className="text-xs text-gray-500 truncate mt-0.5">{user.email}</p>
                     </div>
-                    <Link to="/profile" className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-violet-50 hover:text-violet-700 transition-colors">
-                      <UserCircleIcon className="w-5 h-5" />
-                      My Profile
-                    </Link>
-                    <button onClick={logout} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors">
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                      </svg>
-                      Sign Out
-                    </button>
+                    <div className="p-2">
+                      <Link to="/profile" className="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-gray-600 hover:bg-violet-50 hover:text-violet-700 rounded-xl transition-colors">
+                        <UserCircleIcon className="w-5 h-5" />
+                        My Profile
+                      </Link>
+                      <button onClick={logout} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-gray-600 hover:bg-red-50 hover:text-red-600 rounded-xl transition-colors">
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        Sign Out
+                      </button>
+                    </div>
                   </div>
                 </div>
               </>
             ) : (
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-4">
                 <Link to="/login">
-                  <Button variant="ghost" className="font-medium">Sign In</Button>
+                  <Button variant="ghost" className="font-bold text-gray-600 hover:text-gray-900">Sign In</Button>
                 </Link>
                 <Link to="/signup">
-                  <Button variant="primary" className="font-medium shadow-md hover:shadow-lg transition-shadow">Sign Up</Button>
+                  <Button variant="primary" className="rounded-full px-6 py-2.5 font-bold shadow-lg shadow-violet-200">Sign Up</Button>
                 </Link>
               </div>
             )}
@@ -308,28 +307,28 @@ export const Header: React.FC<HeaderProps> = () => {
 
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-gray-200 animate-slideDown">
-            <div className="space-y-4">
+          <div className="md:hidden py-4 border-t border-gray-100 animate-slideDown">
+            <div className="space-y-4 px-2">
               {/* Mobile Search */}
               <div className="relative">
                 <MagnifyingGlassIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
                   placeholder="Search pets..."
-                  className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500"
+                  className="w-full pl-12 pr-4 py-3 bg-gray-50 border-0 rounded-xl focus:ring-0 text-gray-900 font-medium"
                 />
               </div>
 
               {user ? (
                 <div className="space-y-1">
-                  <Link to="/add-pet" className="flex items-center gap-3 px-4 py-3 text-white bg-gradient-to-r from-violet-600 to-purple-600 rounded-xl font-medium">
+                  <Link to="/add-pet" className="flex items-center gap-3 px-4 py-3 text-white bg-gradient-to-r from-violet-600 to-fuchsia-600 rounded-xl font-bold shadow-lg shadow-violet-200">
                     <PlusCircleIcon className="w-5 h-5" />
                     Post Pet
                   </Link>
-                  <Link to="/vets" className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-violet-50 rounded-xl">
+                  <Link to="/vets" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-xl font-medium">
                     Find Vets
                   </Link>
-                  <Link to="/stores" className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-violet-50 rounded-xl">
+                  <Link to="/stores" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-xl font-medium">
                     Pet Stores
                   </Link>
                   {isAdmin && (
@@ -337,7 +336,7 @@ export const Header: React.FC<HeaderProps> = () => {
                       Admin Panel
                     </Link>
                   )}
-                  <Link to="/wishlist" className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-violet-50 rounded-xl">
+                  <Link to="/wishlist" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-xl font-medium">
                     <HeartIcon className="w-5 h-5" />
                     Wishlist
                     {wishlistCount > 0 && (
@@ -346,7 +345,7 @@ export const Header: React.FC<HeaderProps> = () => {
                   </Link>
                   <button
                     onClick={() => setShowNotifications(!showNotifications)}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-violet-50 rounded-xl"
+                    className="w-full flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-xl font-medium"
                   >
                     <BellIcon className="w-5 h-5" />
                     Notifications
@@ -355,22 +354,22 @@ export const Header: React.FC<HeaderProps> = () => {
                     )}
                   </button>
                   <div className="border-t border-gray-100 pt-2 mt-2">
-                    <Link to="/profile" className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-violet-50 rounded-xl">
+                    <Link to="/profile" className="flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-xl font-medium">
                       <UserCircleIcon className="w-5 h-5" />
                       Profile
                     </Link>
-                    <button onClick={logout} className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl">
+                    <button onClick={logout} className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl font-medium">
                       Sign Out
                     </button>
                   </div>
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-3 pt-2">
                   <Link to="/login" className="block">
-                    <Button variant="ghost" className="w-full justify-center">Sign In</Button>
+                    <Button variant="ghost" className="w-full justify-center font-bold text-gray-600">Sign In</Button>
                   </Link>
                   <Link to="/signup" className="block">
-                    <Button variant="primary" className="w-full justify-center">Sign Up</Button>
+                    <Button variant="primary" className="w-full justify-center font-bold rounded-xl">Sign Up</Button>
                   </Link>
                 </div>
               )}
