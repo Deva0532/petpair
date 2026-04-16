@@ -266,6 +266,7 @@ export const addToWishlist = async (petId: string): Promise<void> => {
             const errorData = await response.json();
             throw new Error(errorData.message || 'Failed to add to wishlist');
         }
+        window.dispatchEvent(new Event('wishlistUpdated'));
     } catch (error) {
         console.error("Error adding to wishlist: ", error);
         throw error;
@@ -285,6 +286,7 @@ export const removeFromWishlist = async (petId: string): Promise<void> => {
             const errorData = await response.json();
             throw new Error(errorData.message || 'Failed to remove from wishlist');
         }
+        window.dispatchEvent(new Event('wishlistUpdated'));
     } catch (error) {
         console.error("Error removing from wishlist: ", error);
         throw error;

@@ -51,9 +51,15 @@ export const Header: React.FC<HeaderProps> = () => {
         } catch (error) {
           console.error('Failed to fetch wishlist count');
         }
+      } else {
+        setWishlistCount(0);
       }
     };
+    
     fetchWishlistCount();
+
+    window.addEventListener('wishlistUpdated', fetchWishlistCount);
+    return () => window.removeEventListener('wishlistUpdated', fetchWishlistCount);
   }, [user]);
 
   // Fetch notifications
