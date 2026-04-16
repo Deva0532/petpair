@@ -81,7 +81,7 @@ export const Signup: React.FC = () => {
 
     const success = await signup(formData.name, formData.email, formData.password, formData.location, formData.otp);
     if (success) {
-      navigate('/');
+      navigate('/select-user-type');
     } else {
       setErrors({ general: 'Failed to create account. Please check OTP and try again.' });
     }
@@ -89,9 +89,13 @@ export const Signup: React.FC = () => {
 
   const handleGoogleSuccess = async (credentialResponse: any) => {
     if (credentialResponse.credential) {
-      const success = await loginWithGoogle(credentialResponse.credential);
-      if (success) {
-        navigate('/');
+      const result = await loginWithGoogle(credentialResponse.credential);
+      if (result.success) {
+        if (result.isNewUser) {
+          navigate('/select-user-type');
+        } else {
+          navigate('/');
+        }
       } else {
         setErrors({ general: 'Failed to sign up with Google' });
       }

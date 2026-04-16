@@ -64,7 +64,7 @@ export interface User {
   petsListed?: number;
   successfulSales?: number;
   // New fields for pet stores & admin
-  userType?: 'individual' | 'store';
+  userType?: 'individual' | 'store' | 'normal' | 'kennel';
   isNewUser?: boolean;
   emailVerified?: boolean;
   mobileVerified?: boolean;

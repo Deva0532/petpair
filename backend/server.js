@@ -6,6 +6,11 @@ import cors from 'cors';
 import { OAuth2Client } from 'google-auth-library';
 import dotenv from 'dotenv';
 import nodemailer from 'nodemailer';
+import XLSX from 'xlsx';
+import multer from 'multer';
+
+// Configure multer for file uploads (memory storage for Excel processing)
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
 dotenv.config();
 
@@ -53,8 +58,8 @@ const userSchema = new mongoose.Schema({
   bio: { type: String, default: 'Edit your bio to share your passion for pets!' },
   googleId: { type: String },
   avatar: { type: String },
-  // New fields for pet stores & admin
-  userType: { type: String, enum: ['individual', 'store'], default: 'individual' },
+  // User category: normal (max 2 pets) or kennel (unlimited, premium)
+  userType: { type: String, enum: ['individual', 'store', 'normal', 'kennel'], default: 'normal' },
   isNewUser: { type: Boolean, default: true },
   emailVerified: { type: Boolean, default: false },
   mobileVerified: { type: Boolean, default: false },
@@ -110,8 +115,6 @@ const generateToken = (user) => {
     storeApproved: user.storeApproved,
     storeRejected: user.storeRejected,
     storeName: user.storeName,
-    storeDescription: user.storeDescription,
-    storeAddress: user.storeAddress,
     storeDescription: user.storeDescription,
     storeAddress: user.storeAddress,
     role: user.role
@@ -210,7 +213,7 @@ app.post('/api/auth/send-verification-otp', async (req, res) => {
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: email,
-      subject: 'Verify your email for Petpair',
+      subject: 'Verify your email for Peto',
       text: `Your verification code is: ${otp}. It will expire in 10 minutes.`
     };
 
@@ -312,7 +315,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: email,
-      subject: 'Your Password Reset OTP - PetPair',
+      subject: 'Your Password Reset OTP - Peto',
       text: `Your OTP for password reset is: ${otp}\n\nIt expires in 10 minutes.`
     };
 
@@ -563,8 +566,181 @@ const Vet = mongoose.model('Vet', vetSchema);
 const Notification = mongoose.model('Notification', notificationSchema);
 
 // --- PET ENDPOINTS ---
+
+// Get current user's pet count
+app.get('/api/pets/my-count', protect, async (req, res) => {
+  try {
+    const count = await Pet.countDocuments({ ownerId: req.user.userId, status: { $ne: 'deleted' } });
+    const user = await User.findById(req.user.userId).select('userType');
+    const userType = (user?.userType === 'kennel') ? 'kennel' : 'normal';
+    const maxPets = userType === 'kennel' ? Infinity : 2;
+    res.json({ count, maxPets, userType, canPost: userType === 'kennel' || count < 2 });
+  } catch (error) {
+    console.error('Error fetching pet count:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Download Excel template for bulk pet upload (MUST be before /:id route)
+app.get('/api/pets/bulk-template', protect, async (req, res) => {
+  try {
+    const headers = [
+      'name', 'type', 'breed', 'age', 'gender', 'price', 'location',
+      'description', 'weight', 'size', 'activityLevel',
+      'vaccinated', 'neutered', 'availableForSale', 'availableForMating',
+      'goodWithKids', 'goodWithPets', 'houseTrained', 'specialNeeds',
+      'medicalNotes'
+    ];
+
+    const sampleData = [
+      {
+        name: 'Buddy', type: 'dog', breed: 'Golden Retriever', age: 2, gender: 'male',
+        price: 15000, location: 'Mumbai', description: 'Friendly and playful golden retriever',
+        weight: 30, size: 'large', activityLevel: 'high',
+        vaccinated: 'yes', neutered: 'no', availableForSale: 'yes', availableForMating: 'no',
+        goodWithKids: 'yes', goodWithPets: 'yes', houseTrained: 'yes', specialNeeds: 'no',
+        medicalNotes: 'All vaccinations up to date'
+      }
+    ];
+
+    const ws = XLSX.utils.json_to_sheet(sampleData, { header: headers });
+    ws['!cols'] = headers.map(h => ({ wch: Math.max(h.length + 2, 15) }));
+    
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Pets');
+
+    const instructions = [
+      { Field: 'name', Description: 'Pet name (required)', 'Allowed Values': 'Any text' },
+      { Field: 'type', Description: 'Type of pet (required)', 'Allowed Values': 'dog, cat, bird, fish, reptile, other' },
+      { Field: 'breed', Description: 'Breed of pet (required)', 'Allowed Values': 'Any text' },
+      { Field: 'age', Description: 'Age in years (required)', 'Allowed Values': 'Number (e.g., 2, 0.5)' },
+      { Field: 'gender', Description: 'Gender', 'Allowed Values': 'male, female' },
+      { Field: 'price', Description: 'Price in INR', 'Allowed Values': 'Number (e.g., 15000)' },
+      { Field: 'location', Description: 'Location (required)', 'Allowed Values': 'City, State' },
+      { Field: 'description', Description: 'Description (required)', 'Allowed Values': 'Any text' },
+      { Field: 'weight', Description: 'Weight in kg', 'Allowed Values': 'Number' },
+      { Field: 'size', Description: 'Size category', 'Allowed Values': 'small, medium, large, extra-large' },
+      { Field: 'activityLevel', Description: 'Activity level', 'Allowed Values': 'low, moderate, high' },
+      { Field: 'vaccinated', Description: 'Is vaccinated?', 'Allowed Values': 'yes, no' },
+      { Field: 'neutered', Description: 'Is neutered/spayed?', 'Allowed Values': 'yes, no' },
+      { Field: 'availableForSale', Description: 'Available for sale?', 'Allowed Values': 'yes, no' },
+      { Field: 'availableForMating', Description: 'Available for mating?', 'Allowed Values': 'yes, no' },
+      { Field: 'goodWithKids', Description: 'Good with kids?', 'Allowed Values': 'yes, no' },
+      { Field: 'goodWithPets', Description: 'Good with other pets?', 'Allowed Values': 'yes, no' },
+      { Field: 'houseTrained', Description: 'Is house trained?', 'Allowed Values': 'yes, no' },
+      { Field: 'specialNeeds', Description: 'Has special needs?', 'Allowed Values': 'yes, no' },
+      { Field: 'medicalNotes', Description: 'Medical notes', 'Allowed Values': 'Any text' },
+    ];
+    const instrSheet = XLSX.utils.json_to_sheet(instructions);
+    instrSheet['!cols'] = [{ wch: 18 }, { wch: 30 }, { wch: 45 }];
+    XLSX.utils.book_append_sheet(wb, instrSheet, 'Instructions');
+
+    const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    res.setHeader('Content-Disposition', 'attachment; filename=peto_pet_upload_template.xlsx');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.send(Buffer.from(buffer));
+  } catch (error) {
+    console.error('Error generating template:', error);
+    res.status(500).json({ message: 'Server error generating template' });
+  }
+});
+
+// Bulk upload pets from Excel (kennel users only, MUST be before /:id route)
+app.post('/api/pets/bulk-upload', protect, upload.single('file'), async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId).select('userType');
+    if (user?.userType !== 'kennel') {
+      return res.status(403).json({ message: 'Bulk upload is only available for Kennel users.' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(sheet);
+
+    if (rows.length === 0) {
+      return res.status(400).json({ message: 'Excel file is empty' });
+    }
+    if (rows.length > 50) {
+      return res.status(400).json({ message: 'Maximum 50 pets per bulk upload' });
+    }
+
+    const yesToBool = (val) => {
+      if (typeof val === 'boolean') return val;
+      if (typeof val === 'string') return val.toLowerCase().trim() === 'yes' || val.toLowerCase().trim() === 'true';
+      return false;
+    };
+
+    const results = { success: 0, failed: 0, errors: [] };
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      try {
+        if (!row.name || !row.type || !row.breed || !row.age || !row.location || !row.description) {
+          results.errors.push({ row: i + 2, error: 'Missing required fields (name, type, breed, age, location, description)' });
+          results.failed++;
+          continue;
+        }
+
+        const pet = new Pet({
+          name: String(row.name).trim(),
+          type: String(row.type).toLowerCase().trim(),
+          breed: String(row.breed).trim(),
+          age: parseFloat(row.age) || 0,
+          gender: row.gender ? String(row.gender).toLowerCase().trim() : 'male',
+          price: parseFloat(row.price) || 0,
+          location: String(row.location).trim(),
+          description: String(row.description).trim(),
+          weight: row.weight ? parseFloat(row.weight) : undefined,
+          size: row.size ? String(row.size).toLowerCase().trim() : 'medium',
+          activityLevel: row.activityLevel ? String(row.activityLevel).toLowerCase().trim() : 'moderate',
+          vaccinated: yesToBool(row.vaccinated),
+          neutered: yesToBool(row.neutered),
+          availableForSale: row.availableForSale !== undefined ? yesToBool(row.availableForSale) : true,
+          availableForMating: yesToBool(row.availableForMating),
+          goodWithKids: yesToBool(row.goodWithKids),
+          goodWithPets: yesToBool(row.goodWithPets),
+          houseTrained: yesToBool(row.houseTrained),
+          specialNeeds: yesToBool(row.specialNeeds),
+          medicalNotes: row.medicalNotes ? String(row.medicalNotes).trim() : '',
+          imageUrls: [],
+          ownerId: req.user.userId,
+          status: 'active'
+        });
+
+        await pet.save();
+        results.success++;
+      } catch (err) {
+        results.errors.push({ row: i + 2, error: err.message });
+        results.failed++;
+      }
+    }
+
+    res.status(201).json({
+      message: `Bulk upload complete: ${results.success} pets created, ${results.failed} failed.`,
+      ...results
+    });
+  } catch (error) {
+    console.error('Bulk upload error:', error);
+    res.status(500).json({ message: 'Server error during bulk upload' });
+  }
+});
+
 app.post('/api/pets', protect, async (req, res) => {
   try {
+    // Enforce pet limit for normal users
+    const user = await User.findById(req.user.userId).select('userType');
+    const userType = user?.userType;
+    if (userType !== 'kennel') {
+      const activePetCount = await Pet.countDocuments({ ownerId: req.user.userId, status: { $ne: 'deleted' } });
+      if (activePetCount >= 2) {
+        return res.status(403).json({ message: 'Normal users can post a maximum of 2 pets. Upgrade to Kennel for unlimited listings.' });
+      }
+    }
     const pet = new Pet({ ...req.body, ownerId: req.user.userId, status: 'active' });
     const savedPet = await pet.save();
     res.status(201).json(savedPet);
@@ -665,7 +841,7 @@ app.get('/api/pets', async (req, res) => {
         .sort(sortOptions)
         .skip(skip)
         .limit(limit)
-        .populate('ownerId', 'name email location phone bio avatar emailVerified mobileVerified createdAt'),
+        .populate('ownerId', 'name email location phone bio avatar emailVerified mobileVerified userType createdAt'),
       Pet.countDocuments(query)
     ]);
 
@@ -685,7 +861,7 @@ app.get('/api/pets', async (req, res) => {
 
 app.get('/api/pets/:id', async (req, res) => {
   try {
-    const pet = await Pet.findById(req.params.id).populate('ownerId', 'name email location phone bio avatar emailVerified mobileVerified createdAt');
+    const pet = await Pet.findById(req.params.id).populate('ownerId', 'name email location phone bio avatar emailVerified mobileVerified userType createdAt');
     if (!pet) return res.status(404).json({ message: 'Pet not found' });
     res.json(pet);
   } catch (error) {
@@ -732,7 +908,7 @@ app.delete('/api/pets/:id', protect, async (req, res) => {
 app.get('/api/wishlist', protect, async (req, res) => {
   try {
     const wishlistItems = await Wishlist.find({ userId: req.user.userId })
-      .populate({ path: 'petId', populate: { path: 'ownerId', select: 'name email location phone bio' } })
+      .populate({ path: 'petId', populate: { path: 'ownerId', select: 'name email location phone bio avatar userType storeName emailVerified mobileVerified' } })
       .sort({ addedAt: -1 });
     const items = wishlistItems.map(item => ({
       id: item._id,
@@ -799,22 +975,23 @@ app.put('/api/preferences', protect, async (req, res) => {
 // --- USER TYPE & STORE REGISTRATION ---
 app.post('/api/auth/set-user-type', protect, async (req, res) => {
   const { userType, storeName, storeDescription, storeAddress } = req.body;
-  if (!userType || !['individual', 'store'].includes(userType)) {
+  if (!userType || !['individual', 'store', 'normal', 'kennel'].includes(userType)) {
     return res.status(400).json({ message: 'Invalid user type' });
   }
   try {
     const user = await User.findById(req.user.userId);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    user.userType = userType;
+    // Map old values to new ones
+    const mappedType = (userType === 'individual') ? 'normal' : (userType === 'store') ? 'kennel' : userType;
+    user.userType = mappedType;
     user.isNewUser = false;
 
-    if (userType === 'store') {
-      if (!storeName) return res.status(400).json({ message: 'Store name is required' });
-      user.storeName = storeName;
+    if (mappedType === 'kennel' || userType === 'store') {
+      user.storeName = storeName || '';
       user.storeDescription = storeDescription || '';
       user.storeAddress = storeAddress || user.location;
-      user.storeApproved = false;
+      user.storeApproved = mappedType === 'kennel' ? true : false;
       user.storeRejected = false;
     }
 
@@ -852,7 +1029,7 @@ app.post('/api/auth/send-profile-otp', protect, async (req, res) => {
       const mailOptions = {
         from: process.env.EMAIL_USER,
         to: value,
-        subject: 'Verify your email - PetPair',
+        subject: 'Verify your email - Peto',
         text: `Your verification code is: ${otp}. It expires in 10 minutes.`
       };
       await transporter.sendMail(mailOptions);
@@ -1272,8 +1449,8 @@ app.delete('/api/admin/users/:id', protect, isAdmin, async (req, res) => {
       const mailOptions = {
         from: process.env.EMAIL_USER,
         to: user.email,
-        subject: 'Account Removal Notice - PetPair',
-        text: `Dear ${user.name},\n\nWe regret to inform you that your account on PetPair has been removed by our admin team.\n\nReason: ${reason}\n\nIf you believe this was a mistake or have any questions, please contact our support team.\n\nBest regards,\nThe PetPair Team`
+        subject: 'Account Removal Notice - Peto',
+        text: `Dear ${user.name},\n\nWe regret to inform you that your account on Peto has been removed by our admin team.\n\nReason: ${reason}\n\nIf you believe this was a mistake or have any questions, please contact our support team.\n\nBest regards,\nThe Peto Team`
       };
       transporter.sendMail(mailOptions).catch(err => console.error('Email error:', err));
 
@@ -1345,8 +1522,8 @@ app.delete('/api/admin/pets/:id', protect, isAdmin, async (req, res) => {
       const mailOptions = {
         from: process.env.EMAIL_USER,
         to: pet.ownerId.email,
-        subject: 'Pet Listing Removed - PetPair',
-        text: `Dear ${pet.ownerId.name},\n\nWe regret to inform you that your pet listing "${pet.name}" (${pet.breed}) has been removed from PetPair by our admin team.\n\nReason: ${reason}\n\nIf you believe this was a mistake or have any questions, please contact our support team.\n\nBest regards,\nThe PetPair Team`
+        subject: 'Pet Listing Removed - Peto',
+        text: `Dear ${pet.ownerId.name},\n\nWe regret to inform you that your pet listing "${pet.name}" (${pet.breed}) has been removed from Peto by our admin team.\n\nReason: ${reason}\n\nIf you believe this was a mistake or have any questions, please contact our support team.\n\nBest regards,\nThe Peto Team`
       };
       transporter.sendMail(mailOptions).catch(err => console.error('Email error:', err));
 
@@ -1408,7 +1585,7 @@ app.post('/api/admin/store-approvals/:id', protect, isAdmin, async (req, res) =>
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: user.email,
-      subject: action === 'approve' ? 'Your store has been approved! - PetPair' : 'Store application update - PetPair',
+      subject: action === 'approve' ? 'Your store has been approved! - Peto' : 'Store application update - Peto',
       text: action === 'approve'
         ? `Congratulations! Your store "${user.storeName}" has been approved. You can now list pets and be visible in the Pet Stores section.`
         : `We're sorry, but your store application for "${user.storeName}" was not approved at this time. Please contact support for more information.`
@@ -1466,7 +1643,7 @@ app.post('/api/admin/send-notification', protect, isAdmin, async (req, res) => {
           from: process.env.EMAIL_USER,
           to: user.email,
           subject: subject,
-          text: `Hi ${user.name},\n\n${message}\n\nBest regards,\nThe PetPair Team`
+          text: `Hi ${user.name},\n\n${message}\n\nBest regards,\nThe Peto Team`
         });
         sentCount++;
       } catch (emailErr) {
@@ -1771,4 +1948,19 @@ app.delete('/api/admin/vets/:id', protect, async (req, res) => {
   }
 });
 
+// --- MIGRATION ENDPOINT: Migrate all existing users to 'normal' ---
+app.post('/api/admin/migrate-users-to-normal', protect, isAdmin, async (req, res) => {
+  try {
+    const result = await User.updateMany(
+      { userType: { $in: ['individual', null, undefined] } },
+      { $set: { userType: 'normal' } }
+    );
+    res.json({ message: `Migration complete. ${result.modifiedCount} users updated to normal.` });
+  } catch (error) {
+    console.error('Migration error:', error);
+    res.status(500).json({ message: 'Server error during migration' });
+  }
+});
+
 app.listen(PORT, () => { console.log(`Server is running on http://localhost:${PORT}`); });
+

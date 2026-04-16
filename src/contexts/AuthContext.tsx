@@ -68,8 +68,11 @@ const decodeToken = (token: string): User | null => {
       bio: decodedPayload.bio || '',
       avatar: decodedPayload.avatar,
       joinedAt: decodedPayload.joinedAt,
-      // New fields
-      userType: decodedPayload.userType || 'individual',
+      // Map old user types to new ones for backward compatibility
+      userType: (() => {
+        const raw = decodedPayload.userType || 'normal';
+        return raw === 'individual' ? 'normal' : raw === 'store' ? 'kennel' : raw;
+      })(),
       isNewUser: decodedPayload.isNewUser ?? false,
       emailVerified: decodedPayload.emailVerified || false,
       mobileVerified: decodedPayload.mobileVerified || false,

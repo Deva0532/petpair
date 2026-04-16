@@ -333,7 +333,7 @@ export const AdminNotifications: React.FC = () => {
                             <div className="bg-white rounded-lg p-4 border border-gray-200">
                                 <p className="font-semibold text-gray-900">{subject || '(No subject)'}</p>
                                 <p className="text-gray-600 mt-2 whitespace-pre-wrap">
-                                    Hi [User Name],{'\n\n'}{message || '(No message)'}{'\n\n'}Best regards,{'\n'}The PetPair Team
+                                    Hi [User Name],{'\n\n'}{message || '(No message)'}{'\n\n'}Best regards,{'\n'}The Peto Team
                                 </p>
                             </div>
                         </div>

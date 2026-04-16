@@ -5,7 +5,8 @@ import { Pet } from '../types';
 import { getPets, getWishlist, addToWishlist, removeFromWishlist } from '../services/petService';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
-import { BuildingStorefrontIcon, HeartIcon } from '@heroicons/react/24/outline'; // Adjust icons as needed
+import { HeartIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
+import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
 
 interface FilterOptions {
   type: string;
@@ -63,6 +64,7 @@ export const Home: React.FC = () => {
   });
   const [favorites, setFavorites] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<'recent' | 'price-low' | 'price-high' | 'age' | 'featured'>('recent');
+  const [filterOpen, setFilterOpen] = useState(false);
 
   useEffect(() => {
     const fetchPets = async () => {
@@ -94,7 +96,16 @@ export const Home: React.FC = () => {
       }
       try {
         const wishlist = await getWishlist();
-        const favoriteIds = wishlist.map((item: any) => item.pet?.id || item.pet?._id).filter(Boolean);
+        // Extract pet IDs from wishlist items, handling both id formats
+        const favoriteIds = wishlist.map((item: any) => {
+          // Handle both formats: item.pet or direct item structure
+          const pet = item.pet || item;
+          if (pet) {
+            return String(pet.id || pet._id || '');
+          }
+          return '';
+        }).filter((id: string) => id.length > 0);
+        console.log('Wishlist favorite IDs:', favoriteIds);
         setFavorites(favoriteIds);
       } catch (error) {
         console.error("Failed to fetch wishlist", error);
@@ -122,89 +133,144 @@ export const Home: React.FC = () => {
       showToast('Please sign in to add to wishlist', 'info');
       return;
     }
-    const isCurrentlyFavorited = favorites.includes(petId);
+
+    const petIdStr = String(petId);
+    const isCurrentlyFavorited = favorites.includes(petIdStr);
+
+    // Optimistic update
     if (isCurrentlyFavorited) {
-      setFavorites(prev => prev.filter(id => id !== petId));
+      setFavorites(prev => prev.filter(id => id !== petIdStr));
     } else {
-      setFavorites(prev => [...prev, petId]);
+      setFavorites(prev => [...prev, petIdStr]);
     }
+
     try {
       if (isCurrentlyFavorited) {
-        await removeFromWishlist(petId);
+        await removeFromWishlist(petIdStr);
+        showToast('Removed from wishlist', 'info');
       } else {
-        await addToWishlist(petId);
+        await addToWishlist(petIdStr);
+        showToast('Added to wishlist ❤️', 'success');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to update wishlist:', error);
+      // Revert optimistic update
       if (isCurrentlyFavorited) {
-        setFavorites(prev => [...prev, petId]);
+        setFavorites(prev => [...prev, petIdStr]);
       } else {
-        setFavorites(prev => prev.filter(id => id !== petId));
+        setFavorites(prev => prev.filter(id => id !== petIdStr));
+      }
+      // Show appropriate error message
+      const msg = error?.message || 'Failed to update wishlist';
+      if (msg.includes('already in wishlist')) {
+        // Not really an error - just sync state
+        setFavorites(prev => prev.includes(petIdStr) ? prev : [...prev, petIdStr]);
+      } else {
+        showToast(msg, 'error');
       }
     }
   };
 
+  const switchToDating = () => {
+    setActiveTab('dating');
+    showToast('Switched to Pet Dating mode 💕', 'info');
+  };
+
+  const switchToSell = () => {
+    setActiveTab('sell');
+  };
+
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-slate-50/50">
       {/* Hero Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-12 text-center">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-50 text-orange-600 text-sm font-semibold mb-6 border border-orange-100">
-          <span className="text-lg">✨</span> The smartest way to find your companion
-        </div>
+      <div className="relative overflow-hidden bg-white border-b border-slate-100">
+        {/* Decorative background orbs */}
+        <div className="absolute -top-24 -right-24 w-96 h-96 bg-violet-100/40 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-fuchsia-100/30 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-orange-50/40 rounded-full blur-3xl pointer-events-none" />
 
-        <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-slate-900 mb-4">
-          Find Your New
-        </h1>
-        <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-8">
-          <span className="bg-gradient-to-r from-violet-600 via-fuchsia-500 to-orange-400 bg-clip-text text-transparent">Best Friend</span>
-        </h1>
-
-        <p className="max-w-2xl mx-auto text-xl text-slate-500 mb-12 leading-relaxed">
-          Browse thousands of verified pets from trusted sellers and breeders near you.
-        </p>
-
-        {/* Mode Selection Cards */}
-        <div className="flex flex-col md:flex-row gap-6 max-w-2xl mx-auto">
-          <button
-            onClick={() => setActiveTab('sell')}
-            className={`flex-1 p-6 rounded-3xl text-left transition-all duration-300 border ${activeTab === 'sell'
-                ? 'bg-violet-50 border-violet-200 shadow-xl shadow-violet-100 ring-2 ring-violet-500 ring-offset-2'
-                : 'bg-white border-slate-100 hover:border-violet-200 hover:shadow-lg'
-              }`}
-          >
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 ${activeTab === 'sell' ? 'bg-violet-500 text-white' : 'bg-violet-100 text-violet-600'
-              }`}>
-              <BuildingStorefrontIcon className="w-6 h-6" />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-14 pb-12 text-center">
+          <div className="animate-fadeInUp">
+            <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-gradient-to-r from-violet-50 to-fuchsia-50 text-violet-600 text-sm font-semibold mb-8 border border-violet-100/60 shadow-sm shadow-violet-100/20">
+              <span className="text-base">✨</span> The smartest way to find your companion
             </div>
-            <h3 className="text-lg font-bold text-slate-900 mb-1">Pet Marketplace</h3>
-            <p className="text-sm text-slate-500 font-medium">Buy and adopt pets safely.</p>
-          </button>
 
-          <button
-            onClick={() => setActiveTab('dating')}
-            className={`flex-1 p-6 rounded-3xl text-left transition-all duration-300 border ${activeTab === 'dating'
-                ? 'bg-rose-50 border-rose-200 shadow-xl shadow-rose-100 ring-2 ring-rose-500 ring-offset-2'
-                : 'bg-white border-slate-100 hover:border-rose-200 hover:shadow-lg'
-              }`}
-          >
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 ${activeTab === 'dating' ? 'bg-rose-500 text-white' : 'bg-rose-100 text-rose-600'
-              }`}>
-              <HeartIcon className="w-6 h-6" />
+            <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-slate-900 mb-3 leading-[1.1]">
+              Find Your New
+            </h1>
+            <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 leading-[1.1]">
+              <span className="bg-gradient-to-r from-violet-600 via-fuchsia-500 to-orange-400 bg-clip-text text-transparent">Best Friend</span>
+            </h1>
+
+            <p className="max-w-xl mx-auto text-lg text-slate-500 mb-8 leading-relaxed font-medium">
+              Browse thousands of verified pets from trusted sellers and breeders near you.
+            </p>
+          </div>
+
+          {/* Active Tab Indicator */}
+          {activeTab === 'dating' && (
+            <div className="animate-fadeInUp">
+              <div className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-gradient-to-r from-rose-50 to-pink-50 border border-rose-200/60 shadow-sm">
+                <HeartSolidIcon className="w-5 h-5 text-rose-500" />
+                <span className="text-sm font-bold text-rose-700">Pet Dating Mode</span>
+                <span className="text-slate-300">|</span>
+                <button
+                  onClick={switchToSell}
+                  className="text-sm font-semibold text-slate-500 hover:text-violet-600 transition-colors"
+                >
+                  Switch to Marketplace →
+                </button>
+              </div>
             </div>
-            <h3 className="text-lg font-bold text-slate-900 mb-1">Pet Dating</h3>
-            <p className="text-sm text-slate-500 font-medium">Match and breed pets.</p>
-          </button>
+          )}
         </div>
       </div>
+
+      {/* Floating Pet Dating Indicator - Fixed top-right below navbar, always visible in sell mode */}
+      {activeTab === 'sell' && (
+        <div className="pet-dating-floating-indicator" onClick={switchToDating}>
+          <div className="pet-dating-floating-inner">
+            <div className="pet-dating-floating-icon">
+              <HeartIcon className="w-4 h-4 text-white" />
+            </div>
+            <div className="pet-dating-floating-text">
+              <span className="text-[0.7rem] font-bold text-slate-800 leading-tight">Pet Dating</span>
+              <span className="text-[0.6rem] text-rose-500 font-semibold">Find a match →</span>
+            </div>
+            <div className="pet-dating-floating-arrow">
+              <ArrowRightIcon className="w-4 h-4 text-rose-500" />
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div id="pets-section">
           <div className="flex flex-col lg:flex-row gap-8">
-            {/* Filters Sidebar */}
-            <div className="lg:w-1/4">
+            {/* Filters Sidebar - Desktop only, collapsible */}
+            <div className="lg:w-1/4 hidden lg:block">
               <div className="lg:sticky lg:top-24 lg:max-h-[calc(100vh-100px)] lg:overflow-y-auto scrollbar-hide">
-                <PetFilters filters={filters} onFiltersChange={setFilters} activeTab={activeTab} />
+                <PetFilters
+                  filters={filters}
+                  onFiltersChange={setFilters}
+                  activeTab={activeTab}
+                  isOpen={filterOpen}
+                  onToggle={() => setFilterOpen(!filterOpen)}
+                  onClose={() => setFilterOpen(false)}
+                />
               </div>
+            </div>
+
+            {/* Mobile filter (floating button + slide-over rendered by PetFilters) */}
+            <div className="lg:hidden">
+              <PetFilters
+                filters={filters}
+                onFiltersChange={setFilters}
+                activeTab={activeTab}
+                isOpen={filterOpen}
+                onToggle={() => setFilterOpen(!filterOpen)}
+                onClose={() => setFilterOpen(false)}
+              />
             </div>
 
             {/* Main Content */}
@@ -212,7 +278,7 @@ export const Home: React.FC = () => {
               <div className="flex items-center justify-between mb-8 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
                 <div className="flex items-center gap-3">
                   <h2 className="text-2xl font-bold text-slate-900">
-                    Available Pets
+                    {activeTab === 'dating' ? 'Pets for Dating' : 'Available Pets'}
                   </h2>
                   <span className="bg-slate-900 text-white text-xs font-bold px-2.5 py-1 rounded-full">
                     {displayCount}
@@ -239,9 +305,20 @@ export const Home: React.FC = () => {
               </div>
 
               {loading ? (
-                <div className="text-center py-20 bg-slate-50 rounded-3xl border border-slate-100">
-                  <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-slate-200 border-t-violet-600"></div>
-                  <p className="text-slate-500 mt-4 font-medium">Finding perfect matches...</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {[...Array(6)].map((_, i) => (
+                    <div key={i} className="bg-white rounded-[1.25rem] overflow-hidden border border-slate-100/80 animate-pulse">
+                      <div className="aspect-[4/3.5] bg-slate-100 skeleton-shimmer" />
+                      <div className="p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="h-5 w-28 bg-slate-100 rounded-lg" />
+                          <div className="h-5 w-16 bg-slate-100 rounded-lg" />
+                        </div>
+                        <div className="h-3.5 w-36 bg-slate-100 rounded-md" />
+                        <div className="h-3 w-24 bg-slate-50 rounded-md" />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : (
                 <>
@@ -252,19 +329,21 @@ export const Home: React.FC = () => {
                           key={pet.id}
                           pet={pet}
                           mode={activeTab}
-                          isFavorited={favorites.includes(pet.id)}
+                          isFavorited={favorites.includes(String(pet.id))}
                           onFavorite={handleFavorite}
                         />
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-20 bg-slate-50 rounded-3xl border border-slate-100">
-                      <div className="text-6xl mb-6">🔍</div>
+                    <div className="text-center py-20 bg-white rounded-[1.25rem] border border-slate-100/80 shadow-sm">
+                      <div className="w-20 h-20 mx-auto mb-5 bg-gradient-to-br from-violet-50 to-fuchsia-50 rounded-2xl flex items-center justify-center">
+                        <span className="text-4xl">🔍</span>
+                      </div>
                       <h3 className="text-xl font-bold text-slate-900 mb-2">No pets found</h3>
-                      <p className="text-slate-500 max-w-sm mx-auto">We couldn't find any pets matching your criteria. Try adjusting your filters.</p>
+                      <p className="text-slate-500 max-w-sm mx-auto text-[0.95rem] leading-relaxed">We couldn't find any pets matching your criteria. Try adjusting your filters.</p>
                       <button
                         onClick={() => setFilters({ ...filters, type: 'all', breed: '', minPrice: 0, maxPrice: 500000 })}
-                        className="mt-6 px-6 py-2.5 bg-white border border-slate-200 text-slate-700 font-semibold rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all"
+                        className="mt-6 px-6 py-2.5 bg-white border-2 border-slate-200 text-slate-700 font-semibold rounded-xl hover:bg-violet-50 hover:border-violet-200 hover:text-violet-700 transition-all duration-300"
                       >
                         Clear Filters
                       </button>

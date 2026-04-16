@@ -268,6 +268,323 @@ html {
   box-shadow: 0 20px 40px -15px rgba(139, 92, 246, 0.2);
 }
 
+/* ===== Premium Pet Card Styles ===== */
+.pet-card-container {
+  perspective: 1000px;
+}
+
+.pet-card {
+  box-shadow: 
+    0 1px 3px rgba(0, 0, 0, 0.04),
+    0 4px 12px rgba(0, 0, 0, 0.03);
+  transition: all 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  will-change: transform, box-shadow;
+}
+
+.pet-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 
+    0 12px 28px rgba(139, 92, 246, 0.10),
+    0 8px 16px rgba(0, 0, 0, 0.06),
+    0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+/* Staggered entrance animation for grid items */
+.pet-card-container:nth-child(1) { animation-delay: 0ms; }
+.pet-card-container:nth-child(2) { animation-delay: 60ms; }
+.pet-card-container:nth-child(3) { animation-delay: 120ms; }
+.pet-card-container:nth-child(4) { animation-delay: 180ms; }
+.pet-card-container:nth-child(5) { animation-delay: 240ms; }
+.pet-card-container:nth-child(6) { animation-delay: 300ms; }
+.pet-card-container:nth-child(7) { animation-delay: 360ms; }
+.pet-card-container:nth-child(8) { animation-delay: 420ms; }
+.pet-card-container:nth-child(9) { animation-delay: 480ms; }
+
+@keyframes petCardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.pet-card-container {
+  animation: petCardEnter 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+.pet-card-image-wrapper {
+  position: relative;
+}
+
+.pet-card-image-wrapper::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, rgb(139 92 246), rgb(168 85 247), rgb(236 72 153));
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.pet-card:hover .pet-card-image-wrapper::after {
+  opacity: 1;
+}
+
+/* Favorite button pulse animation */
+@keyframes heartBeat {
+  0% { transform: scale(1); }
+  25% { transform: scale(1.15); }
+  50% { transform: scale(1); }
+  75% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+.pet-card button[aria-label*="favorites"]:active {
+  animation: heartBeat 0.4s ease-in-out;
+}
+
+/* ===== Kennel Card Premium Styles ===== */
+.kennel-card-premium {
+  background: linear-gradient(135deg, #fffbf0 0%, #ffffff 40%, #fff8ee 100%);
+  border: 1.5px solid rgba(245, 158, 11, 0.25);
+  box-shadow:
+    0 2px 12px rgba(245, 158, 11, 0.08),
+    0 4px 20px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.kennel-card-premium:hover {
+  border-color: rgba(245, 158, 11, 0.45);
+  box-shadow:
+    0 8px 32px rgba(245, 158, 11, 0.18),
+    0 12px 40px rgba(0, 0, 0, 0.08),
+    0 0 0 1px rgba(245, 158, 11, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.kennel-accent-bar-premium {
+  height: 3px;
+  background: linear-gradient(90deg, #d97706, #f59e0b, #fbbf24, #f59e0b, #d97706);
+  background-size: 200% 100%;
+  animation: kennelBarFlow 3s ease-in-out infinite;
+  position: relative;
+}
+
+@keyframes kennelBarFlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.kennel-badge-premium {
+  background: linear-gradient(135deg, #b45309 0%, #d97706 30%, #f59e0b 60%, #d97706 100%);
+  box-shadow: 0 4px 14px rgba(217, 119, 6, 0.4), 0 1px 3px rgba(0,0,0,0.1);
+  position: relative;
+  overflow: hidden;
+  letter-spacing: 0.02em;
+}
+
+.kennel-badge-premium::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    110deg,
+    transparent 25%,
+    rgba(255, 255, 255, 0.3) 45%,
+    rgba(255, 255, 255, 0.4) 50%,
+    rgba(255, 255, 255, 0.3) 55%,
+    transparent 75%
+  );
+  animation: kennelBadgeShine 3s ease-in-out infinite;
+}
+
+@keyframes kennelBadgeShine {
+  0% { transform: translateX(-180%); }
+  100% { transform: translateX(180%); }
+}
+
+.kennel-card-content {
+  background: linear-gradient(180deg, rgba(255, 251, 235, 0.6) 0%, rgba(255, 255, 255, 0) 100%);
+}
+
+.kennel-store-tag {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #92400e;
+  border: 1px solid rgba(217, 119, 6, 0.2);
+  box-shadow: 0 1px 3px rgba(217, 119, 6, 0.1);
+}
+
+/* Old classes kept for backward compat */
+.kennel-card {
+  box-shadow:
+    0 2px 8px rgba(245, 158, 11, 0.08),
+    0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.kennel-card:hover {
+  box-shadow:
+    0 12px 32px rgba(245, 158, 11, 0.15),
+    0 8px 20px rgba(0, 0, 0, 0.06);
+}
+
+.kennel-accent-bar {
+  position: relative;
+  overflow: hidden;
+}
+
+.kennel-accent-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.6) 50%,
+    transparent 100%
+  );
+  animation: kennelShimmer 3s ease-in-out infinite;
+}
+
+@keyframes kennelShimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.kennel-badge {
+  position: relative;
+  overflow: hidden;
+}
+
+.kennel-badge::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    120deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.25) 50%,
+    transparent 70%
+  );
+  animation: kennelBadgeShine 4s ease-in-out infinite;
+}
+
+/* ===== Floating Pet Dating Indicator ===== */
+.pet-dating-floating-indicator {
+  position: fixed;
+  top: 88px;
+  right: 24px;
+  z-index: 40;
+  cursor: pointer;
+  animation: floatingDatingEnter 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation-delay: 0.5s;
+}
+
+@keyframes floatingDatingEnter {
+  from {
+    opacity: 0;
+    transform: translateX(30px) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+.pet-dating-floating-inner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px 10px 10px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(244, 63, 94, 0.15);
+  border-radius: 16px;
+  box-shadow:
+    0 4px 20px rgba(244, 63, 94, 0.12),
+    0 2px 8px rgba(0, 0, 0, 0.04),
+    0 0 0 1px rgba(255, 255, 255, 0.6) inset;
+  transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.pet-dating-floating-indicator:hover .pet-dating-floating-inner {
+  transform: translateY(-2px);
+  border-color: rgba(244, 63, 94, 0.35);
+  box-shadow:
+    0 8px 28px rgba(244, 63, 94, 0.2),
+    0 4px 12px rgba(0, 0, 0, 0.06),
+    0 0 0 1px rgba(255, 255, 255, 0.8) inset;
+}
+
+.pet-dating-floating-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #f43f5e, #ec4899);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(244, 63, 94, 0.35);
+  flex-shrink: 0;
+  animation: floatingIconPulse 2.5s ease-in-out infinite;
+}
+
+@keyframes floatingIconPulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 4px 12px rgba(244, 63, 94, 0.35); }
+  50% { transform: scale(1.05); box-shadow: 0 6px 18px rgba(244, 63, 94, 0.5); }
+}
+
+.pet-dating-floating-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.pet-dating-floating-arrow {
+  animation: floatingArrowBounce 1.8s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes floatingArrowBounce {
+  0%, 100% { transform: translateX(0); opacity: 0.6; }
+  50% { transform: translateX(4px); opacity: 1; }
+}
+
+/* Responsive: hide text on small screens */
+@media (max-width: 640px) {
+  .pet-dating-floating-indicator {
+    top: 76px;
+    right: 12px;
+  }
+  .pet-dating-floating-text {
+    display: none;
+  }
+  .pet-dating-floating-arrow {
+    display: none;
+  }
+  .pet-dating-floating-inner {
+    padding: 8px;
+    border-radius: 12px;
+  }
+}
+
+/* Pet Dating toggle animation (kept for backward compat) */
+@keyframes gentleBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+@keyframes arrowPulse {
+  0%, 100% { opacity: 0.5; transform: translateX(0); }
+  50% { opacity: 1; transform: translateX(3px); }
+}
+
 /* Image hover zoom */
 .img-zoom {
   overflow: hidden;

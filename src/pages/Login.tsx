@@ -28,6 +28,25 @@ export const Login: React.FC = () => {
 
     const success = await login(email, password);
     if (success) {
+      // Check if user needs to select type
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const payloadBase64 = token.split('.')[1];
+          const base64 = payloadBase64.replace(/-/g, '+').replace(/_/g, '/');
+          const decodedPayload = JSON.parse(atob(base64));
+          if (decodedPayload.role === 'admin') {
+            navigate('/');
+            return;
+          }
+          if (decodedPayload.isNewUser) {
+            navigate('/select-user-type');
+            return;
+          }
+        } catch (e) {
+          console.error('Error decoding token:', e);
+        }
+      }
       navigate('/');
     } else {
       setErrors({ general: 'Invalid email or password' });

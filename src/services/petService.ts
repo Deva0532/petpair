@@ -290,3 +290,78 @@ export const removeFromWishlist = async (petId: string): Promise<void> => {
         throw error;
     }
 };
+
+// --- PET COUNT & BULK UPLOAD FUNCTIONS ---
+
+export const getUserPetCount = async (): Promise<{
+    count: number;
+    maxPets: number;
+    userType: string;
+    canPost: boolean;
+}> => {
+    const token = localStorage.getItem('token');
+    if (!token) throw new Error('User not authenticated');
+
+    try {
+        const response = await fetch(`${API_BASE}/pets/my-count`, {
+            headers: getAuthHeaders()
+        });
+        if (!response.ok) throw new Error('Failed to fetch pet count');
+        return await response.json();
+    } catch (error) {
+        console.error("Error fetching pet count: ", error);
+        return { count: 0, maxPets: 2, userType: 'normal', canPost: true };
+    }
+};
+
+export const downloadBulkTemplate = async (): Promise<void> => {
+    const token = localStorage.getItem('token');
+    if (!token) throw new Error('User not authenticated');
+
+    try {
+        const response = await fetch(`${API_BASE}/pets/bulk-template`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!response.ok) throw new Error('Failed to download template');
+        
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'peto_pet_upload_template.xlsx';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+    } catch (error) {
+        console.error("Error downloading template: ", error);
+        throw error;
+    }
+};
+
+export const bulkUploadPets = async (file: File): Promise<{
+    message: string;
+    success: number;
+    failed: number;
+    errors: Array<{ row: number; error: string }>;
+}> => {
+    const token = localStorage.getItem('token');
+    if (!token) throw new Error('User not authenticated');
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        const response = await fetch(`${API_BASE}/pets/bulk-upload`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Bulk upload failed');
+        return data;
+    } catch (error) {
+        console.error("Error bulk uploading pets: ", error);
+        throw error;
+    }
+};

@@ -612,10 +612,25 @@ export const MyPetsTab: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {pets.map((pet) => (
+        {pets.map((pet) => {
+          const hasImage = pet.imageUrls && pet.imageUrls.length > 0 && !pet.image?.includes('placehold.co');
+          return (
           <Card key={pet.id} className={`overflow-hidden hover:shadow-lg transition-shadow ${pet.status === 'sold' ? 'opacity-75' : ''}`}>
             <div className="relative">
-              <img src={pet.image} alt={pet.name} className="w-full h-48 object-cover" />
+              {hasImage ? (
+                <img src={pet.image} alt={pet.name} className="w-full h-48 object-cover" />
+              ) : (
+                <div className="w-full h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex flex-col items-center justify-center relative">
+                  <PhotoIcon className="w-12 h-12 text-gray-300" />
+                  <p className="text-sm text-gray-400 mt-1 font-medium">No Image</p>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setEditingPet(pet); }}
+                    className="mt-2 text-xs bg-violet-600 text-white px-3 py-1 rounded-full font-medium hover:bg-violet-700 transition-colors"
+                  >
+                    📷 Add Photo
+                  </button>
+                </div>
+              )}
               {pet.featured && (
                 <div className="absolute top-3 left-3 bg-gradient-to-r from-amber-400 to-orange-400 text-white px-3 py-1 rounded-full text-xs font-bold">⭐ Club</div>
               )}
@@ -623,6 +638,14 @@ export const MyPetsTab: React.FC = () => {
                 {pet.status === 'sold' ? '🏷️ Sold' : '✓ Active'}
               </div>
             </div>
+            {/* No Image Warning */}
+            {!hasImage && pet.status !== 'sold' && (
+              <div className="px-4 py-2 bg-amber-50 border-b border-amber-100">
+                <p className="text-xs text-amber-700 flex items-center gap-1">
+                  ⚠️ Pets with photos get <strong>3x more views</strong>
+                </p>
+              </div>
+            )}
             <div className="p-6">
               <div className="flex items-start justify-between mb-2">
                 <h3 className="text-lg font-semibold text-gray-900">{pet.name}</h3>
@@ -652,7 +675,8 @@ export const MyPetsTab: React.FC = () => {
               </div>
             </div>
           </Card>
-        ))}
+          );
+        })}
       </div>
 
       {pets.length === 0 && (

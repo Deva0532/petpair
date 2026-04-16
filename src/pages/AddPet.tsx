@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PhotoIcon, XMarkIcon, SparklesIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { PhotoIcon, XMarkIcon, SparklesIcon, PlusIcon, TrashIcon, ArrowDownTrayIcon, DocumentArrowUpIcon, TableCellsIcon } from '@heroicons/react/24/outline';
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
-import { uploadImage, addPet } from '../services/petService';
+import { uploadImage, addPet, getUserPetCount, downloadBulkTemplate, bulkUploadPets } from '../services/petService';
 
 interface HealthRecord {
   visitType: string;
@@ -74,6 +74,29 @@ export const AddPet: React.FC = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const [postMode, setPostMode] = useState<'single' | 'bulk'>('single');
+  const [canPost, setCanPost] = useState(true);
+  const [petCount, setPetCount] = useState(0);
+  const [loadingCount, setLoadingCount] = useState(true);
+  const [bulkFile, setBulkFile] = useState<File | null>(null);
+  const [bulkResult, setBulkResult] = useState<any>(null);
+  const isKennel = user?.userType === 'kennel';
+
+  useEffect(() => {
+    const checkPetCount = async () => {
+      try {
+        const data = await getUserPetCount();
+        setCanPost(data.canPost);
+        setPetCount(data.count);
+      } catch (e) {
+        console.error('Error checking pet count:', e);
+      } finally {
+        setLoadingCount(false);
+      }
+    };
+    checkPetCount();
+  }, []);
+
   const [formData, setFormData] = useState<PetFormData>({
     name: '',
     breed: '',
@@ -104,6 +127,32 @@ export const AddPet: React.FC = () => {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+
+  const handleBulkUpload = async () => {
+    if (!bulkFile) return;
+    setIsSubmitting(true);
+    try {
+      const result = await bulkUploadPets(bulkFile);
+      setBulkResult(result);
+      showToast(`🎉 ${result.success} pets uploaded successfully!`, 'success', 5000);
+      if (result.failed === 0) {
+        setTimeout(() => navigate('/profile'), 2000);
+      }
+    } catch (error: any) {
+      showToast(error.message || 'Bulk upload failed', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleTemplateDownload = async () => {
+    try {
+      await downloadBulkTemplate();
+      showToast('📥 Template downloaded!', 'success');
+    } catch (error) {
+      showToast('Failed to download template', 'error');
+    }
+  };
 
   if (!user) {
     return (
@@ -201,7 +250,10 @@ export const AddPet: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateStep(3)) return;
+    // Prevent submission if not on the final step
+    if (currentStep !== 3) return;
+    // Validate all steps before submitting
+    if (!validateStep(1) || !validateStep(2) || !validateStep(3)) return;
     setIsSubmitting(true);
     try {
       const uploadedImageUrls: string[] = [];
@@ -262,15 +314,198 @@ export const AddPet: React.FC = () => {
     { num: 3, title: 'Listing' }
   ];
 
+  if (loadingCount) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-rose-50 via-white to-violet-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-violet-200 border-t-violet-600"></div>
+      </div>
+    );
+  }
+
+  // Normal user pet limit reached
+  if (!canPost && !isKennel) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-rose-50 via-white to-violet-50 py-8">
+        <div className="max-w-lg mx-auto px-4">
+          <div className="bg-white rounded-3xl shadow-xl border border-amber-200 p-8 text-center">
+            <div className="w-20 h-20 bg-gradient-to-r from-amber-100 to-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <span className="text-4xl">🚫</span>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Pet Limit Reached</h2>
+            <p className="text-gray-600 mb-2">You've posted {petCount} out of 2 pets allowed for Normal users.</p>
+            <p className="text-gray-500 text-sm mb-6">Upgrade to Kennel to post unlimited pets, get premium badges, and use bulk upload.</p>
+            
+            <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-xl p-4 mb-6 text-left">
+              <h3 className="font-semibold text-amber-800 flex items-center gap-2 mb-2">
+                <span>🏅</span> Kennel Benefits
+              </h3>
+              <ul className="text-sm text-amber-700 space-y-1.5">
+                <li className="flex items-center gap-2"><CheckCircleIcon className="w-4 h-4 text-amber-500 flex-shrink-0" /> Unlimited pet listings</li>
+                <li className="flex items-center gap-2"><CheckCircleIcon className="w-4 h-4 text-amber-500 flex-shrink-0" /> Bulk upload via Excel</li>
+                <li className="flex items-center gap-2"><CheckCircleIcon className="w-4 h-4 text-amber-500 flex-shrink-0" /> Premium Kennel badge on listings</li>
+              </ul>
+            </div>
+
+            <button onClick={() => navigate('/profile')} className="w-full bg-gradient-to-r from-violet-600 to-purple-600 text-white py-3 px-6 rounded-xl font-semibold hover:from-violet-700 hover:to-purple-700 transition-all shadow-lg">
+              Go to My Pets
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50 via-white to-violet-50 py-8">
       <div className="max-w-3xl mx-auto px-4">
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-violet-600 to-rose-600 bg-clip-text text-transparent mb-2">
             Post Your Pet
           </h1>
           <p className="text-gray-600">Find the perfect home for your furry friend</p>
+          {!isKennel && (
+            <p className="text-sm text-amber-600 mt-2 font-medium">
+              📋 {petCount}/2 pet listings used
+            </p>
+          )}
         </div>
+
+        {/* Mode Toggle for Kennel Users */}
+        {isKennel && (
+          <div className="flex justify-center mb-6">
+            <div className="bg-white rounded-2xl p-1.5 shadow-md border border-gray-100 inline-flex gap-1">
+              <button
+                onClick={() => { setPostMode('single'); setBulkResult(null); }}
+                className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${
+                  postMode === 'single'
+                    ? 'bg-violet-600 text-white shadow-md'
+                    : 'text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                <PlusIcon className="w-4 h-4" /> Single Post
+              </button>
+              <button
+                onClick={() => { setPostMode('bulk'); setBulkResult(null); }}
+                className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${
+                  postMode === 'bulk'
+                    ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md'
+                    : 'text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                <TableCellsIcon className="w-4 h-4" /> Bulk Upload
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Bulk Upload UI */}
+        {postMode === 'bulk' && isKennel && (
+          <div className="bg-white rounded-3xl shadow-xl border border-amber-100 p-8 mb-8">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-gradient-to-r from-amber-100 to-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <DocumentArrowUpIcon className="w-8 h-8 text-amber-600" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900 mb-1">Bulk Upload Pets</h2>
+              <p className="text-gray-500 text-sm">Upload multiple pets at once using an Excel spreadsheet</p>
+            </div>
+
+            {/* Step 1: Download Template */}
+            <div className="mb-6 p-4 bg-gradient-to-r from-violet-50 to-purple-50 rounded-xl border border-violet-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                    <span className="bg-violet-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">1</span>
+                    Download Template
+                  </h3>
+                  <p className="text-sm text-gray-600 mt-1 ml-8">Fill in pet details in the Excel template</p>
+                </div>
+                <button
+                  onClick={handleTemplateDownload}
+                  className="flex items-center gap-2 px-4 py-2 bg-white border border-violet-300 text-violet-700 rounded-xl font-medium hover:bg-violet-50 transition-colors"
+                >
+                  <ArrowDownTrayIcon className="w-5 h-5" />
+                  Download .xlsx
+                </button>
+              </div>
+            </div>
+
+            {/* Step 2: Upload File */}
+            <div className="mb-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
+              <h3 className="font-semibold text-gray-900 flex items-center gap-2 mb-3">
+                <span className="bg-gray-700 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">2</span>
+                Upload Filled Template
+              </h3>
+              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:bg-gray-100 hover:border-amber-400 transition-all">
+                {bulkFile ? (
+                  <div className="text-center">
+                    <DocumentArrowUpIcon className="w-8 h-8 text-green-500 mx-auto" />
+                    <p className="text-sm font-medium text-gray-900 mt-1">{bulkFile.name}</p>
+                    <p className="text-xs text-gray-500">Click to change file</p>
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <DocumentArrowUpIcon className="w-8 h-8 text-gray-400 mx-auto" />
+                    <p className="text-sm text-gray-500 mt-1">Click to upload Excel file</p>
+                    <p className="text-xs text-gray-400">.xlsx files only, max 50 pets</p>
+                  </div>
+                )}
+                <input
+                  type="file"
+                  className="hidden"
+                  accept=".xlsx,.xls"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) { setBulkFile(file); setBulkResult(null); }
+                  }}
+                />
+              </label>
+            </div>
+
+            {/* Info Banner */}
+            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+              <p className="text-sm text-blue-800 flex items-start gap-2">
+                <span className="text-lg mt-[-2px]">💡</span>
+                <span>Pet images can be uploaded later individually from the <strong>My Pets → Edit</strong> page. Pets without images will show a "No Image" indicator.</span>
+              </p>
+            </div>
+
+            {/* Results */}
+            {bulkResult && (
+              <div className={`mb-6 p-4 rounded-xl border ${bulkResult.failed > 0 ? 'bg-amber-50 border-amber-200' : 'bg-green-50 border-green-200'}`}>
+                <h3 className={`font-semibold mb-2 ${bulkResult.failed > 0 ? 'text-amber-800' : 'text-green-800'}`}>
+                  Upload Results
+                </h3>
+                <div className="flex gap-4 text-sm">
+                  <span className="text-green-700">✅ {bulkResult.success} succeeded</span>
+                  {bulkResult.failed > 0 && <span className="text-red-600">❌ {bulkResult.failed} failed</span>}
+                </div>
+                {bulkResult.errors?.length > 0 && (
+                  <div className="mt-2 text-xs text-red-600 space-y-1">
+                    {bulkResult.errors.map((err: any, i: number) => (
+                      <p key={i}>Row {err.row}: {err.error}</p>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Submit */}
+            <button
+              onClick={handleBulkUpload}
+              disabled={!bulkFile || isSubmitting}
+              className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-semibold hover:from-amber-600 hover:to-orange-600 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {isSubmitting ? (
+                <><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> Uploading...</>
+              ) : (
+                <><DocumentArrowUpIcon className="w-5 h-5" /> Upload Pets</>
+              )}
+            </button>
+          </div>
+        )}
+
+        {postMode === 'single' && (
+        <>
 
         {/* Progress Steps */}
         <div className="flex justify-center mb-8">
@@ -297,7 +532,7 @@ export const AddPet: React.FC = () => {
             </div>
           )}
 
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} onKeyDown={(e) => { if (e.key === 'Enter' && currentStep < 3) { e.preventDefault(); } }}>
             {/* Step 1: Basic Info */}
             {currentStep === 1 && (
               <div className="p-8 space-y-6">
@@ -688,6 +923,8 @@ export const AddPet: React.FC = () => {
             </div>
           </form>
         </div>
+        </>
+        )}
       </div>
     </div>
   );

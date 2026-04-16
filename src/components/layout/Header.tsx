@@ -161,7 +161,7 @@ export const Header: React.FC<HeaderProps> = () => {
                 </g>
               </svg>
             </div>
-            <span className="text-2xl font-bold text-gray-900">Pet<span className="text-violet-600">Pair</span></span>
+            <span className="text-2xl font-bold text-gray-900">Pe<span className="text-violet-600">to</span></span>
           </Link>
 
           {/* Search Bar - Desktop */}

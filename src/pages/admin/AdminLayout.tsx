@@ -92,7 +92,7 @@ export const AdminLayout: React.FC = () => {
                             <HeartIcon className="w-6 h-6 text-white" />
                         </div>
                         <div>
-                            <span className="text-xl font-bold bg-gradient-to-r from-violet-600 to-pink-500 bg-clip-text text-transparent">PetPair</span>
+                            <span className="text-xl font-bold bg-gradient-to-r from-violet-600 to-pink-500 bg-clip-text text-transparent">Peto</span>
                             <span className="block text-xs text-gray-500">Admin Panel</span>
                         </div>
                     </Link>
