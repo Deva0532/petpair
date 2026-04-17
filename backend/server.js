@@ -8,6 +8,7 @@ import dotenv from 'dotenv';
 import nodemailer from 'nodemailer';
 import XLSX from 'xlsx';
 import multer from 'multer';
+import twilio from 'twilio';
 
 // Configure multer for file uploads (memory storage for Excel processing)
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
@@ -19,6 +20,14 @@ const PORT = process.env.PORT;
 const JWT_SECRET = process.env.JWT_SECRET
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
+
+// --- TWILIO CLIENT ---
+let twilioClient;
+if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
+  twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+} else {
+  console.warn('Twilio credentials missing. SMS functionality will not work, falling back to mock.');
+}
 
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
@@ -1064,9 +1073,29 @@ app.post('/api/auth/send-profile-otp', protect, async (req, res) => {
       await transporter.sendMail(mailOptions);
       res.json({ message: 'Verification code sent to email' });
     } else if (type === 'mobile') {
-      // For mobile, we'll just log it for now (needs SMS service integration)
-      console.log(`[MOCK SMS] OTP for ${value}: ${otp}`);
-      res.json({ message: 'Verification code sent to mobile (mocked)', otp: process.env.NODE_ENV === 'development' ? otp : undefined });
+      try {
+        let phoneValue = value;
+        if (!phoneValue.startsWith('+')) {
+          phoneValue = `+91${phoneValue}`;
+        }
+
+        if (!twilioClient) {
+          // Fallback to mock text if Twilio is not configured
+          console.log(`[MOCK SMS] OTP for ${phoneValue}: ${otp}`);
+          return res.json({ message: 'Verification code sent to mobile (mocked fallback)', otp: process.env.NODE_ENV === 'development' ? otp : undefined });
+        }
+
+        await twilioClient.messages.create({
+          body: `Your Peto verification code is: ${otp}`,
+          from: process.env.TWILIO_PHONE_NUMBER,
+          to: phoneValue
+        });
+
+        res.json({ message: 'Verification code sent to mobile', otp: process.env.NODE_ENV === 'development' ? otp : undefined });
+      } catch (smsError) {
+        console.error('Twilio SMS error:', smsError);
+        res.status(500).json({ message: 'Failed to send SMS OTP. Please check server configuration.' });
+      }
     }
   } catch (error) {
     console.error('Send profile OTP error:', error);
