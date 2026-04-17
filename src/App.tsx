@@ -18,6 +18,7 @@ import { UserTypeSelection } from './pages/UserTypeSelection';
 import { PetStores } from './pages/PetStores';
 import { StoreDetails } from './pages/StoreDetails';
 import { AdminLayout } from './pages/admin/AdminLayout';
+import { PublicProfile } from './pages/PublicProfile';
 
 const GOOGLE_CLIENT_ID = '491619630108-3e8nu5ocp54e5kjgb79rms5cqa91b847.apps.googleusercontent.com';
 
@@ -45,6 +46,7 @@ function App() {
                         <Route path="/vets" element={<Vets />} />
                         <Route path="/messages" element={<Messages />} />
                         <Route path="/profile" element={<UserProfile />} />
+                        <Route path="/user/:id" element={<PublicProfile />} />
                         <Route path="/wishlist" element={<Wishlist />} />
                         <Route path="/stores" element={<PetStores />} />
                         <Route path="/stores/:id" element={<StoreDetails />} />

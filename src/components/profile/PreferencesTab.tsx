@@ -485,10 +485,18 @@ export const PreferencesTab: React.FC = () => {
 
           <div className="flex items-center justify-between py-3">
             <div className="flex items-center space-x-3">
-              <CheckCircleIcon className="w-5 h-5 text-emerald-500" />
+              {(user?.emailVerified && user?.mobileVerified) ? (
+                  <CheckCircleIcon className="w-5 h-5 text-emerald-500" />
+              ) : (
+                  <ExclamationTriangleIcon className="w-5 h-5 text-amber-500" />
+              )}
               <div>
                 <h3 className="font-medium text-gray-900">Account Status</h3>
-                <p className="text-sm text-gray-500">Your account is active and verified</p>
+                <p className="text-sm text-gray-500">
+                  {(user?.emailVerified && user?.mobileVerified) 
+                    ? 'Your account is active and verified' 
+                    : 'Your account is active but pending verification'}
+                </p>
               </div>
             </div>
           </div>

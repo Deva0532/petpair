@@ -82,6 +82,7 @@ const decodeToken = (token: string): User | null => {
       storeDescription: decodedPayload.storeDescription || '',
       storeAddress: decodedPayload.storeAddress || '',
       role: decodedPayload.role || 'user',
+      isApproved: decodedPayload.isApproved ?? decodedPayload.storeApproved ?? true,
     };
   } catch (e) {
     console.error("Failed to decode token:", e);

@@ -38,7 +38,7 @@ export const AdminDashboard: React.FC = () => {
     const statCards = stats ? [
         { label: 'Total Users', value: stats.totalUsers, icon: UsersIcon, color: 'from-blue-500 to-blue-600' },
         { label: 'Total Pets', value: stats.totalPets, icon: HeartIcon, color: 'from-pink-500 to-pink-600' },
-        { label: 'Active Stores', value: stats.activeStores, icon: BuildingStorefrontIcon, color: 'from-violet-500 to-violet-600' },
+        { label: 'Active Kennels', value: stats.activeStores, icon: BuildingStorefrontIcon, color: 'from-amber-500 to-amber-600' },
         { label: 'Pending Approvals', value: stats.pendingApprovals, icon: ClockIcon, color: 'from-amber-500 to-amber-600' },
     ] : [];
 
@@ -90,12 +90,12 @@ export const AdminDashboard: React.FC = () => {
                             </div>
                             <div>
                                 <div className="flex justify-between text-sm mb-1">
-                                    <span className="text-gray-600">Store Owners</span>
+                                    <span className="text-gray-600">Kennel Partners</span>
                                     <span className="font-medium">{stats.activeStores}</span>
                                 </div>
                                 <div className="w-full bg-gray-200 rounded-full h-3">
                                     <div
-                                        className="bg-violet-500 h-3 rounded-full transition-all"
+                                        className="bg-amber-500 h-3 rounded-full transition-all"
                                         style={{ width: `${(stats.activeStores / stats.totalUsers) * 100}%` }}
                                     ></div>
                                 </div>
@@ -108,18 +108,29 @@ export const AdminDashboard: React.FC = () => {
                         <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
                         <div className="space-y-3">
                             <Link
-                                to="/admin/store-approvals"
+                                to="/admin/kennel-approvals"
                                 className="flex items-center justify-between p-4 rounded-xl bg-amber-50 hover:bg-amber-100 transition-colors"
                             >
                                 <div className="flex items-center space-x-3">
                                     <ClockIcon className="w-5 h-5 text-amber-600" />
-                                    <span className="font-medium text-amber-800">Review Pending Store Approvals</span>
+                                    <span className="font-medium text-amber-800">Review Pending Kennel Approvals</span>
                                 </div>
                                 {stats.pendingApprovals > 0 && (
                                     <span className="bg-amber-500 text-white text-sm font-bold px-3 py-1 rounded-full">
                                         {stats.pendingApprovals}
                                     </span>
                                 )}
+                            </Link>
+                            <Link
+                                to="/admin/feedbacks"
+                                className="flex items-center justify-between p-4 rounded-xl bg-emerald-50 hover:bg-emerald-100 transition-colors"
+                            >
+                                <div className="flex items-center space-x-3">
+                                    <svg className="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                                    </svg>
+                                    <span className="font-medium text-emerald-800">Review User Feedbacks</span>
+                                </div>
                             </Link>
                             <Link
                                 to="/admin/notifications"

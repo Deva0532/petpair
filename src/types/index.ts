@@ -74,6 +74,7 @@ export interface User {
   storeDescription?: string;
   storeAddress?: string;
   role?: 'user' | 'admin';
+  isApproved?: boolean;
 }
 
 export interface Veterinarian {

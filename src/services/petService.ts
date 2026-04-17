@@ -18,6 +18,7 @@ export interface PetData {
     availableForSale: boolean;
     featured?: boolean;
     imageUrls: string[];
+    videoUrl?: string;
     weight?: number;
     createdAt?: any;
     size?: 'small' | 'medium' | 'large' | 'extra-large';
@@ -75,6 +76,30 @@ export const uploadImage = async (file: File): Promise<string> => {
         return data.secure_url;
     } catch (error) {
         console.error("Error uploading image to Cloudinary: ", error);
+        throw error;
+    }
+};
+
+export const uploadVideo = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    // Cloudinary might accept 'video' directly
+    formData.append('resource_type', 'video');
+
+    try {
+        const response = await fetch(
+            `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/video/upload`,
+            { method: 'POST', body: formData }
+        );
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error?.message || 'Video upload failed');
+        }
+        const data = await response.json();
+        return data.secure_url;
+    } catch (error) {
+        console.error("Error uploading video to Cloudinary: ", error);
         throw error;
     }
 };

@@ -207,42 +207,43 @@ export const Home: React.FC = () => {
             </p>
           </div>
 
-          {/* Active Tab Indicator */}
-          {activeTab === 'dating' && (
-            <div className="animate-fadeInUp">
-              <div className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-gradient-to-r from-rose-50 to-pink-50 border border-rose-200/60 shadow-sm">
-                <HeartSolidIcon className="w-5 h-5 text-rose-500" />
-                <span className="text-sm font-bold text-rose-700">Pet Dating Mode</span>
-                <span className="text-slate-300">|</span>
-                <button
-                  onClick={switchToSell}
-                  className="text-sm font-semibold text-slate-500 hover:text-violet-600 transition-colors"
-                >
-                  Switch to Marketplace →
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
-      {/* Floating Pet Dating Indicator - Fixed top-right below navbar, always visible in sell mode */}
-      {activeTab === 'sell' && (
-        <div className="pet-dating-floating-indicator" onClick={switchToDating}>
-          <div className="pet-dating-floating-inner">
-            <div className="pet-dating-floating-icon">
-              <HeartIcon className="w-4 h-4 text-white" />
-            </div>
-            <div className="pet-dating-floating-text">
-              <span className="text-[0.7rem] font-bold text-slate-800 leading-tight">Pet Dating</span>
-              <span className="text-[0.6rem] text-rose-500 font-semibold">Find a match →</span>
-            </div>
-            <div className="pet-dating-floating-arrow">
-              <ArrowRightIcon className="w-4 h-4 text-rose-500" />
+      {/* Floating Navigation Pill */}
+      <div 
+        className={`floating-nav-indicator fixed z-50 cursor-pointer group ${activeTab === 'sell' ? 'top-[88px] right-6 floating-nav-right' : 'top-[88px] left-6 floating-nav-left'}`}
+        onClick={activeTab === 'sell' ? switchToDating : switchToSell}
+      >
+        {/* Animated gradient border */}
+        <div className="absolute -inset-[2px] rounded-2xl bg-gradient-to-r from-rose-500 via-pink-500 to-violet-500 opacity-80 group-hover:opacity-100 transition-opacity floating-nav-gradient-spin" />
+        
+        {/* Inner content */}
+        <div className="relative bg-slate-900/95 backdrop-blur-xl rounded-2xl px-4 py-3 flex items-center gap-3">
+          {/* Pulsing heart */}
+          <div className="relative">
+            <div className="absolute inset-0 bg-rose-500 rounded-xl blur-md opacity-40 floating-nav-heart" />
+            <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center shadow-lg">
+              <HeartSolidIcon className="w-5 h-5 text-white floating-nav-heart-icon" />
             </div>
           </div>
+          
+          {/* Text */}
+          <div className="flex flex-col mr-1">
+            <span className="text-[12px] font-extrabold text-white leading-tight tracking-wide">
+              {activeTab === 'sell' ? 'Pet Dating' : 'Marketplace'}
+            </span>
+            <span className="text-[10px] font-medium text-rose-300/80 leading-tight">
+              {activeTab === 'sell' ? 'Find a match →' : '← Browse pets'}
+            </span>
+          </div>
+          
+          {/* Arrow indicator */}
+          <div className={`w-7 h-7 rounded-full bg-white/10 flex items-center justify-center floating-nav-arrow ${activeTab === 'dating' ? 'rotate-180' : ''}`}>
+            <ArrowRightIcon className="w-3.5 h-3.5 text-white/80" />
+          </div>
         </div>
-      )}
+      </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div id="pets-section">

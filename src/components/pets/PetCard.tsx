@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { HeartIcon, MapPinIcon } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
@@ -35,9 +35,12 @@ export const PetCard: React.FC<PetCardProps> = ({
   const navigate = useNavigate();
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isHovered, setIsHovered] = useState(false);
 
   // Determine if owner is a kennel user
   const isKennel = (pet.owner as any)?.userType === 'kennel';
+  const videoUrl = (pet as any).videoUrl;
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -51,6 +54,21 @@ export const PetCard: React.FC<PetCardProps> = ({
     navigate(`/pet/${pet.id}`);
   };
 
+  const handleMouseEnter = () => {
+    setIsHovered(true);
+    if (videoRef.current && videoUrl) {
+      videoRef.current.play().catch(() => {});
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+    if (videoRef.current && videoUrl) {
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
+    }
+  };
+
   const formatPrice = (price: number) => {
     return `₹${price.toLocaleString('en-IN')}`;
   };
@@ -62,6 +80,8 @@ export const PetCard: React.FC<PetCardProps> = ({
     <div
       className="pet-card-container group cursor-pointer"
       onClick={handleCardClick}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       <div className={`pet-card relative overflow-hidden transition-all duration-500 ${
         isKennel
@@ -97,6 +117,20 @@ export const PetCard: React.FC<PetCardProps> = ({
               onLoad={() => setImageLoaded(true)}
               onError={() => setImageError(true)}
               loading="lazy"
+            />
+          )}
+
+          {/* Video overlay on hover */}
+          {videoUrl && (
+            <video
+              ref={videoRef}
+              src={videoUrl}
+              muted
+              loop
+              playsInline
+              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 z-[5] ${
+                isHovered ? 'opacity-100' : 'opacity-0'
+              }`}
             />
           )}
 

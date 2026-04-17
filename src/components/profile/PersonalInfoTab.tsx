@@ -174,10 +174,10 @@ export const PersonalInfoTab: React.FC = () => {
               <h4 className="font-medium text-gray-900 mb-2">Member Since</h4>
               <p className="text-gray-600">{user.joinedAt ? new Date(user.joinedAt).toLocaleDateString() : 'N/A'}</p>
             </div>
-            <div className={`bg-gradient-to-br rounded-xl p-6 ${(user.emailVerified || user.mobileVerified) ? 'from-emerald-50 to-green-50' : 'from-gray-50 to-gray-100'}`}>
+            <div className={`bg-gradient-to-br rounded-xl p-6 ${(user.emailVerified && user.mobileVerified) ? 'from-emerald-50 to-green-50' : 'from-gray-50 to-gray-100'}`}>
               <h4 className="font-medium text-gray-900 mb-2">Verification Status</h4>
-              <p className={`font-medium ${(user.emailVerified || user.mobileVerified) ? 'text-emerald-600' : 'text-gray-500'}`}>
-                {(user.emailVerified || user.mobileVerified) ? '✓ Verified Account' : '○ Pending Verification'}
+              <p className={`font-medium ${(user.emailVerified && user.mobileVerified) ? 'text-emerald-600' : 'text-gray-500'}`}>
+                {(user.emailVerified && user.mobileVerified) ? '✓ Verified Account' : '○ Pending Verification'}
               </p>
             </div>
           </div>

@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PhotoIcon, XMarkIcon, SparklesIcon, PlusIcon, TrashIcon, ArrowDownTrayIcon, DocumentArrowUpIcon, TableCellsIcon } from '@heroicons/react/24/outline';
+import { PhotoIcon, XMarkIcon, SparklesIcon, PlusIcon, TrashIcon, ArrowDownTrayIcon, DocumentArrowUpIcon, TableCellsIcon, VideoCameraIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
-import { uploadImage, addPet, getUserPetCount, downloadBulkTemplate, bulkUploadPets } from '../services/petService';
+import { uploadImage, uploadVideo, addPet, getUserPetCount, downloadBulkTemplate, bulkUploadPets } from '../services/petService';
 
 interface HealthRecord {
   visitType: string;
@@ -127,6 +127,8 @@ export const AddPet: React.FC = () => {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoPreview, setVideoPreview] = useState<string>('');
 
   const handleBulkUpload = async () => {
     if (!bulkFile) return;
@@ -192,6 +194,38 @@ export const AddPet: React.FC = () => {
   const removeImage = (index: number) => {
     setFormData(prev => ({ ...prev, images: prev.images.filter((_, i) => i !== index) }));
     setImagePreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const moveImage = (index: number, direction: 'left' | 'right') => {
+    const newIndex = direction === 'left' ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= formData.images.length) return;
+    setFormData(prev => {
+      const newImages = [...prev.images];
+      [newImages[index], newImages[newIndex]] = [newImages[newIndex], newImages[index]];
+      return { ...prev, images: newImages };
+    });
+    setImagePreviews(prev => {
+      const newPreviews = [...prev];
+      [newPreviews[index], newPreviews[newIndex]] = [newPreviews[newIndex], newPreviews[index]];
+      return newPreviews;
+    });
+  };
+
+  const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 50 * 1024 * 1024) {
+      setErrors(prev => ({ ...prev, video: 'Video must be under 50MB' }));
+      return;
+    }
+    setVideoFile(file);
+    setVideoPreview(URL.createObjectURL(file));
+    setErrors(prev => ({ ...prev, video: '' }));
+  };
+
+  const removeVideo = () => {
+    setVideoFile(null);
+    setVideoPreview('');
   };
 
   const addHealthRecord = () => {
@@ -266,6 +300,15 @@ export const AddPet: React.FC = () => {
         }
       }
 
+      let uploadedVideoUrl = '';
+      if (videoFile) {
+        try {
+          uploadedVideoUrl = await uploadVideo(videoFile);
+        } catch (videoError) {
+          console.error('Failed to upload video:', videoError);
+        }
+      }
+
       const finalBreed = formData.breed === 'Other' ? formData.customBreed : formData.breed;
       const finalType = formData.type === 'other' ? formData.customType : formData.type;
 
@@ -285,6 +328,7 @@ export const AddPet: React.FC = () => {
         availableForMating: formData.availableForMating,
         availableForSale: formData.availableForSale,
         imageUrls: uploadedImageUrls,
+        videoUrl: uploadedVideoUrl || undefined,
         weight: parseFloat(formData.weight) || undefined,
         size: formData.size,
         activityLevel: formData.activityLevel,
@@ -808,18 +852,30 @@ export const AddPet: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Images */}
+                {/* Images with Reorder */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Pet Photos (Max 5)</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">📸 Pet Photos (Max 5) — Drag order sets display priority</label>
                   <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
                     {imagePreviews.map((preview, index) => (
-                      <div key={index} className="relative aspect-square rounded-xl overflow-hidden group">
+                      <div key={index} className="relative aspect-square rounded-xl overflow-hidden group border-2 border-transparent hover:border-violet-400 transition-colors">
                         <img src={preview} alt={`Preview ${index}`} className="w-full h-full object-cover" />
-                        <button type="button" onClick={() => removeImage(index)}
-                          className="absolute top-1 right-1 p-1 bg-red-500 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <XMarkIcon className="w-4 h-4" />
-                        </button>
+                        {index === 0 && (
+                          <div className="absolute top-1 left-1 bg-violet-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md uppercase">Cover</div>
+                        )}
+                        <div className="absolute inset-x-0 bottom-0 flex justify-center gap-1 p-1 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button type="button" onClick={() => moveImage(index, 'left')} disabled={index === 0}
+                            className="p-0.5 bg-white/20 rounded hover:bg-white/40 disabled:opacity-30 disabled:cursor-not-allowed">
+                            <ChevronLeftIcon className="w-4 h-4 text-white" />
+                          </button>
+                          <button type="button" onClick={() => removeImage(index)}
+                            className="p-0.5 bg-red-500/80 rounded hover:bg-red-600">
+                            <XMarkIcon className="w-4 h-4 text-white" />
+                          </button>
+                          <button type="button" onClick={() => moveImage(index, 'right')} disabled={index === imagePreviews.length - 1}
+                            className="p-0.5 bg-white/20 rounded hover:bg-white/40 disabled:opacity-30 disabled:cursor-not-allowed">
+                            <ChevronRightIcon className="w-4 h-4 text-white" />
+                          </button>
+                        </div>
                       </div>
                     ))}
                     {imagePreviews.length < 5 && (
@@ -831,6 +887,28 @@ export const AddPet: React.FC = () => {
                     )}
                   </div>
                   {errors.images && <p className="mt-1 text-sm text-red-600">{errors.images}</p>}
+                </div>
+
+                {/* Video Upload */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">🎥 Pet Video (Optional, Max 1, up to 50MB)</label>
+                  {videoPreview ? (
+                    <div className="relative rounded-xl overflow-hidden border-2 border-violet-200 bg-black max-w-xs">
+                      <video src={videoPreview} className="w-full h-48 object-cover" controls muted />
+                      <button type="button" onClick={removeVideo}
+                        className="absolute top-2 right-2 p-1.5 bg-red-500 rounded-full text-white hover:bg-red-600 transition-colors shadow-lg">
+                        <XMarkIcon className="w-4 h-4" />
+                      </button>
+                      <div className="absolute bottom-2 left-2 bg-violet-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-md uppercase">Video</div>
+                    </div>
+                  ) : (
+                    <label className="w-48 h-32 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-violet-400 hover:bg-violet-50 transition-colors">
+                      <VideoCameraIcon className="w-8 h-8 text-gray-400" />
+                      <span className="text-xs text-gray-500 mt-1">Add Video</span>
+                      <input type="file" accept="video/*" onChange={handleVideoUpload} className="hidden" />
+                    </label>
+                  )}
+                  {errors.video && <p className="mt-1 text-sm text-red-600">{errors.video}</p>}
                 </div>
               </div>
             )}

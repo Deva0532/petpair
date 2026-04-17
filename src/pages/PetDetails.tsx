@@ -150,9 +150,24 @@ export const PetDetails: React.FC = () => {
         }
     };
 
-    const images = pet ? (pet.imageUrls && pet.imageUrls.length > 0 ? pet.imageUrls : (pet.image ? [pet.image] : [])) : [];
-    const handlePrevImage = (e: React.MouseEvent) => { e.stopPropagation(); setSelectedImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1)); };
-    const handleNextImage = (e: React.MouseEvent) => { e.stopPropagation(); setSelectedImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1)); };
+    const rawImages = pet ? (pet.imageUrls && pet.imageUrls.length > 0 ? pet.imageUrls : (pet.image ? [pet.image] : [])) : [];
+    const videoUrl = pet ? (pet as any).videoUrl : null;
+    
+    // Build media array: images first, but insert video as 2nd item if it exists
+    const media: { type: 'image' | 'video'; url: string }[] = [];
+    rawImages.forEach((img, i) => {
+        if (i === 1 && videoUrl) {
+            media.push({ type: 'video', url: videoUrl });
+        }
+        media.push({ type: 'image', url: img });
+    });
+    // If only 0 or 1 images, append video at the end
+    if (videoUrl && rawImages.length <= 1) {
+        media.push({ type: 'video', url: videoUrl });
+    }
+
+    const handlePrevImage = (e: React.MouseEvent) => { e.stopPropagation(); setSelectedImageIndex((prev) => (prev === 0 ? media.length - 1 : prev - 1)); };
+    const handleNextImage = (e: React.MouseEvent) => { e.stopPropagation(); setSelectedImageIndex((prev) => (prev === media.length - 1 ? 0 : prev + 1)); };
 
     if (loading) {
         return (
@@ -358,20 +373,34 @@ export const PetDetails: React.FC = () => {
             {/* Main Content Grid */}
             <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 animate-fadeInUp">
-                    {/* Image Gallery - Left side (3 cols) */}
+                    {/* Image/Video Gallery - Left side (3 cols) */}
                     <div className="lg:col-span-3 space-y-3">
                         <div className="relative rounded-[1.5rem] overflow-hidden bg-white shadow-lg shadow-slate-200/50 group aspect-[4/3]">
-                            <img
-                                src={images[selectedImageIndex] || pet.image}
-                                alt={pet.name}
-                                className="w-full h-full object-contain bg-slate-50 transition-transform duration-500"
-                            />
+                            {/* Main media display with crossfade */}
+                            {media[selectedImageIndex]?.type === 'video' ? (
+                                <video
+                                    key={`video-${selectedImageIndex}`}
+                                    src={media[selectedImageIndex].url}
+                                    className="w-full h-full object-contain bg-slate-900 animate-fadeIn"
+                                    controls
+                                    autoPlay
+                                    muted
+                                    loop
+                                />
+                            ) : (
+                                <img
+                                    key={`img-${selectedImageIndex}`}
+                                    src={media[selectedImageIndex]?.url || pet.image}
+                                    alt={pet.name}
+                                    className="w-full h-full object-contain bg-slate-50 animate-fadeIn"
+                                />
+                            )}
 
                             {/* Image overlay gradient */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-400" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-400 pointer-events-none" />
 
                             {/* Navigation arrows */}
-                            {images.length > 1 && (
+                            {media.length > 1 && (
                                 <>
                                     <button onClick={handlePrevImage} className="absolute left-4 top-1/2 -translate-y-1/2 p-2.5 bg-white/90 backdrop-blur-sm rounded-xl shadow-lg hover:bg-white opacity-0 group-hover:opacity-100 transition-all hover:scale-105">
                                         <ChevronLeftIcon className="w-5 h-5 text-slate-700" />
@@ -382,10 +411,10 @@ export const PetDetails: React.FC = () => {
                                 </>
                             )}
 
-                            {/* Image counter */}
-                            {images.length > 1 && (
+                            {/* Dot indicators */}
+                            {media.length > 1 && (
                                 <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 bg-black/40 backdrop-blur-md rounded-full">
-                                    {images.map((_, index) => (
+                                    {media.map((item, index) => (
                                         <button
                                             key={index}
                                             onClick={(e) => { e.stopPropagation(); setSelectedImageIndex(index); }}
@@ -420,20 +449,31 @@ export const PetDetails: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Thumbnails */}
-                        {images.length > 1 && (
-                            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-                                {images.map((img, index) => (
+                        {/* Thumbnail strip with smooth snap scroll */}
+                        {media.length > 1 && (
+                            <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-hide snap-x snap-mandatory scroll-smooth px-0.5">
+                                {media.map((item, index) => (
                                     <button
                                         key={index}
                                         onClick={() => setSelectedImageIndex(index)}
-                                        className={`flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${
+                                        className={`flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all duration-300 snap-start ${
                                             selectedImageIndex === index
-                                                ? 'border-violet-500 shadow-lg shadow-violet-100 scale-105'
-                                                : 'border-transparent opacity-60 hover:opacity-100'
+                                                ? 'border-violet-500 shadow-lg shadow-violet-100 scale-105 ring-2 ring-violet-200'
+                                                : 'border-transparent opacity-60 hover:opacity-100 hover:border-slate-200'
                                         }`}
                                     >
-                                        <img src={img} alt={`${pet.name} ${index + 1}`} className="w-full h-full object-cover" />
+                                        {item.type === 'video' ? (
+                                            <div className="w-full h-full bg-slate-900 flex items-center justify-center relative">
+                                                <video src={item.url} className="w-full h-full object-cover opacity-70" muted />
+                                                <div className="absolute inset-0 flex items-center justify-center">
+                                                    <div className="w-7 h-7 bg-white/90 rounded-full flex items-center justify-center shadow">
+                                                        <svg className="w-3 h-3 text-slate-800 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <img src={item.url} alt={`${pet.name} ${index + 1}`} className="w-full h-full object-cover" />
+                                        )}
                                     </button>
                                 ))}
                             </div>
@@ -522,7 +562,7 @@ export const PetDetails: React.FC = () => {
                         {/* Owner Card */}
                         <div
                             className="bg-white rounded-[1.5rem] border border-slate-100/80 shadow-sm p-5 flex items-center gap-4 cursor-pointer hover:shadow-md hover:border-slate-200 transition-all group"
-                            onClick={() => setActiveTab('owner')}
+                            onClick={() => navigate(`/user/${pet.owner.id}`)}
                         >
                             <img
                                 src={pet.owner.avatar || `https://ui-avatars.com/api/?name=${pet.owner.name}&background=8b5cf6&color=ffffff`}
@@ -532,7 +572,8 @@ export const PetDetails: React.FC = () => {
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
                                     <h4 className="font-bold text-slate-900 text-sm truncate">{pet.owner.name}</h4>
-                                    {(pet.owner.emailVerified || pet.owner.mobileVerified) && (
+                                    {/* TODO: change to && when adding SMS API, currently keeping users unverified if mobile is missing */}
+                                    {(pet.owner.emailVerified && pet.owner.mobileVerified) && (
                                         <CheckCircleIcon className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                                     )}
                                     {isKennel && (
@@ -751,12 +792,19 @@ export const PetDetails: React.FC = () => {
                                 <img
                                     src={pet.owner.avatar || `https://ui-avatars.com/api/?name=${pet.owner.name}&background=8b5cf6&color=ffffff`}
                                     alt={pet.owner.name}
-                                    className="w-20 h-20 rounded-2xl object-cover ring-4 ring-violet-100 shadow-lg"
+                                    className="w-20 h-20 rounded-2xl object-cover ring-4 ring-violet-100 shadow-lg cursor-pointer"
+                                    onClick={() => navigate(`/user/${pet.owner.id}`)}
                                 />
                                 <div className="flex-1">
                                     <div className="flex items-center gap-2.5 mb-2">
-                                        <h3 className="text-xl font-extrabold text-slate-900">{pet.owner.name}</h3>
-                                        {(pet.owner.emailVerified || pet.owner.mobileVerified) && (
+                                        <h3 
+                                            className="text-xl font-extrabold text-slate-900 cursor-pointer hover:text-violet-600 transition-colors"
+                                            onClick={() => navigate(`/user/${pet.owner.id}`)}
+                                        >
+                                            {pet.owner.name}
+                                        </h3>
+                                        {/* TODO: change to && when adding SMS API, currently keeping users unverified if mobile is missing */}
+                                        {(pet.owner.emailVerified && pet.owner.mobileVerified) && (
                                             <div className="flex items-center gap-1 bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-md text-xs font-bold border border-emerald-200/60">
                                                 <CheckCircleIcon className="w-3.5 h-3.5" /> Verified
                                             </div>
@@ -776,7 +824,7 @@ export const PetDetails: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="relative mt-6 grid grid-cols-2 gap-3">
+                            <div className="relative mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
                                 <button
                                     onClick={handleMessage}
                                     className="flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-xl font-bold text-sm hover:shadow-lg hover:shadow-violet-200/50 transition-all disabled:opacity-50"
@@ -791,6 +839,13 @@ export const PetDetails: React.FC = () => {
                                 >
                                     <PhoneIcon className="w-4 h-4" />
                                     Contact
+                                </button>
+                                <button
+                                    onClick={() => navigate(`/user/${pet.owner.id}`)}
+                                    className="flex items-center justify-center gap-2 py-3 bg-violet-50 text-violet-700 rounded-xl font-bold text-sm hover:bg-violet-100 transition-all"
+                                >
+                                    <UserIcon className="w-4 h-4" />
+                                    Full Profile
                                 </button>
                             </div>
                         </div>

@@ -14,18 +14,21 @@ import { useAuth } from '../../contexts/AuthContext';
 import { AdminDashboard } from './AdminDashboard';
 import { AdminUsers } from './AdminUsers';
 import { AdminPets } from './AdminPets';
-import { AdminStoreApprovals } from './AdminStoreApprovals';
+import { AdminKennelApprovals } from './AdminKennelApprovals';
 import { AdminNotifications } from './AdminNotifications';
 import { AdminVets } from './AdminVets';
 import { AdminReportedReviews } from './AdminReportedReviews';
+import { AdminFeedbacks } from './AdminFeedbacks';
+import { ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
 
 const navItems = [
     { path: '/admin', label: 'Dashboard', icon: ChartBarIcon },
     { path: '/admin/users', label: 'Users', icon: UsersIcon },
     { path: '/admin/pets', label: 'Pets', icon: HeartIcon },
     { path: '/admin/vets', label: 'Veterinarians', icon: HeartIcon },
-    { path: '/admin/store-approvals', label: 'Store Approvals', icon: BuildingStorefrontIcon },
+    { path: '/admin/kennel-approvals', label: 'Kennel Approvals', icon: BuildingStorefrontIcon },
     { path: '/admin/reported-reviews', label: 'Reported Reviews', icon: FlagIcon },
+    { path: '/admin/feedbacks', label: 'User Feedbacks', icon: ChatBubbleLeftRightIcon },
     { path: '/admin/notifications', label: 'Send Notifications', icon: BellIcon },
 ];
 
@@ -145,8 +148,9 @@ export const AdminLayout: React.FC = () => {
                     <Route path="/users" element={<AdminUsers />} />
                     <Route path="/pets" element={<AdminPets />} />
                     <Route path="/vets" element={<AdminVets />} />
-                    <Route path="/store-approvals" element={<AdminStoreApprovals />} />
+                    <Route path="/kennel-approvals" element={<AdminKennelApprovals />} />
                     <Route path="/reported-reviews" element={<AdminReportedReviews />} />
+                    <Route path="/feedbacks" element={<AdminFeedbacks />} />
                     <Route path="/notifications" element={<AdminNotifications />} />
                 </Routes>
             </main>

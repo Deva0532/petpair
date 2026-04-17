@@ -68,7 +68,8 @@ const userSchema = new mongoose.Schema({
   storeName: { type: String },
   storeDescription: { type: String },
   storeAddress: { type: String },
-  role: { type: String, enum: ['user', 'admin'], default: 'user' }
+  role: { type: String, enum: ['user', 'admin'], default: 'user' },
+  isApproved: { type: Boolean, default: true }
 }, { timestamps: true });
 
 const User = mongoose.model('User', userSchema);
@@ -117,7 +118,8 @@ const generateToken = (user) => {
     storeName: user.storeName,
     storeDescription: user.storeDescription,
     storeAddress: user.storeAddress,
-    role: user.role
+    role: user.role,
+    isApproved: user.isApproved // Provide isApproved flag
   }, JWT_SECRET, { expiresIn: '7d' });
 };
 
@@ -468,6 +470,7 @@ const petSchema = new mongoose.Schema({
   availableForSale: { type: Boolean, default: true },
   featured: { type: Boolean, default: false },
   imageUrls: [{ type: String }],
+  videoUrl: { type: String },
   weight: { type: Number },
   personality: [{ type: String }],
   careRequirements: { exercise: { type: String }, space: { type: String } },
@@ -558,12 +561,24 @@ const reviewSchema = new mongoose.Schema({
 reviewSchema.index({ petId: 1, createdAt: -1 });
 reviewSchema.index({ petId: 1, userId: 1 }, { unique: true }); // One review per user per pet
 
+// Feedback Schema
+const feedbackSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  type: { type: String, enum: ['suggestion', 'bug', 'other'], default: 'suggestion' },
+  priority: { type: String, enum: ['low', 'medium', 'high'], default: 'low' },
+  comment: { type: String, required: true },
+  status: { type: String, enum: ['pending', 'resolved'], default: 'pending' },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+});
+
 const Pet = mongoose.model('Pet', petSchema);
 const Wishlist = mongoose.model('Wishlist', wishlistSchema);
 const Preferences = mongoose.model('Preferences', preferencesSchema);
 const Review = mongoose.model('Review', reviewSchema);
 const Vet = mongoose.model('Vet', vetSchema);
 const Notification = mongoose.model('Notification', notificationSchema);
+const Feedback = mongoose.model('Feedback', feedbackSchema);
 
 // --- PET ENDPOINTS ---
 
@@ -815,6 +830,12 @@ app.get('/api/pets', async (req, res) => {
       query.availableForMating = true;
     }
 
+    // Exclude pets from unapproved kennels
+    const unapprovedKennels = await User.find({ userType: 'kennel', isApproved: false }).select('_id');
+    if (unapprovedKennels.length > 0) {
+      query.ownerId = { $nin: unapprovedKennels.map(u => u._id) };
+    }
+
     // Determine sort order based on sortBy parameter
     let sortOptions = {};
     switch (sortBy) {
@@ -861,8 +882,14 @@ app.get('/api/pets', async (req, res) => {
 
 app.get('/api/pets/:id', async (req, res) => {
   try {
-    const pet = await Pet.findById(req.params.id).populate('ownerId', 'name email location phone bio avatar emailVerified mobileVerified userType createdAt');
+    const pet = await Pet.findById(req.params.id).populate('ownerId', 'name email location phone bio avatar emailVerified mobileVerified userType isApproved createdAt');
     if (!pet) return res.status(404).json({ message: 'Pet not found' });
+    
+    // Prevent viewing unapproved kennel pets
+    if (pet.ownerId && pet.ownerId.userType === 'kennel' && pet.ownerId.isApproved === false) {
+      return res.status(404).json({ message: 'Pet not found' });
+    }
+
     res.json(pet);
   } catch (error) {
     console.error('Error fetching pet:', error);
@@ -877,7 +904,7 @@ app.put('/api/pets/:id', protect, async (req, res) => {
     if (!pet) return res.status(404).json({ message: 'Pet not found' });
     if (pet.ownerId.toString() !== req.user.userId) return res.status(403).json({ message: 'Not authorized to edit this pet' });
     const allowedUpdates = ['name', 'breed', 'customBreed', 'age', 'type', 'customType', 'gender', 'price', 'location', 'description',
-      'vaccinated', 'neutered', 'availableForMating', 'availableForSale', 'featured', 'imageUrls', 'weight', 'personality',
+      'vaccinated', 'neutered', 'availableForMating', 'availableForSale', 'featured', 'imageUrls', 'videoUrl', 'weight', 'personality',
       'careRequirements', 'medicalNotes', 'healthProblems', 'size', 'activityLevel', 'goodWithKids', 'goodWithPets', 'houseTrained',
       'spayedNeutered', 'specialNeeds', 'healthRecords', 'status'];
     allowedUpdates.forEach(field => { if (req.body[field] !== undefined) pet[field] = req.body[field]; });
@@ -987,12 +1014,14 @@ app.post('/api/auth/set-user-type', protect, async (req, res) => {
     user.userType = mappedType;
     user.isNewUser = false;
 
-    if (mappedType === 'kennel' || userType === 'store') {
+    if (mappedType === 'kennel') {
       user.storeName = storeName || '';
       user.storeDescription = storeDescription || '';
       user.storeAddress = storeAddress || user.location;
-      user.storeApproved = mappedType === 'kennel' ? true : false;
+      user.isApproved = false; // Require admin approval for kennels
       user.storeRejected = false;
+    } else {
+      user.isApproved = true; // Normal users are approved by default
     }
 
     await user.save();
@@ -1394,9 +1423,9 @@ app.get('/api/admin/stats', protect, isAdmin, async (req, res) => {
   try {
     const totalUsers = await User.countDocuments();
     const totalPets = await Pet.countDocuments({ status: { $ne: 'deleted' } });
-    const pendingApprovals = await User.countDocuments({ userType: 'store', storeApproved: false, storeRejected: false });
-    const activeStores = await User.countDocuments({ userType: 'store', storeApproved: true });
-    const individualUsers = await User.countDocuments({ userType: 'individual' });
+    const pendingApprovals = await User.countDocuments({ userType: 'kennel', isApproved: false });
+    const activeStores = await User.countDocuments({ userType: 'kennel', isApproved: true });
+    const individualUsers = await User.countDocuments({ userType: { $in: ['individual', 'normal'] } });
 
     res.json({ totalUsers, totalPets, pendingApprovals, activeStores, individualUsers });
   } catch (error) {
@@ -1549,52 +1578,113 @@ app.delete('/api/admin/pets/:id', protect, isAdmin, async (req, res) => {
   }
 });
 
-app.get('/api/admin/store-approvals', protect, isAdmin, async (req, res) => {
+app.get('/api/admin/kennel-approvals', protect, isAdmin, async (req, res) => {
   try {
-    const pendingStores = await User.find({ userType: 'store', storeApproved: false, storeRejected: false })
+    const pendingKennels = await User.find({ userType: 'kennel', isApproved: false })
       .select('-password')
       .sort({ _id: -1 });
-    res.json(pendingStores);
+    res.json(pendingKennels);
   } catch (error) {
-    console.error('Admin store approvals error:', error);
+    console.error('Admin kennel approvals error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
 
-app.post('/api/admin/store-approvals/:id', protect, isAdmin, async (req, res) => {
-  const { action } = req.body; // 'approve' or 'reject'
-  if (!action || !['approve', 'reject'].includes(action)) {
-    return res.status(400).json({ message: 'Invalid action' });
-  }
-
+app.post('/api/admin/kennels/:id/approve', protect, isAdmin, async (req, res) => {
+  const { action } = req.body;
   try {
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: 'User not found' });
-    if (user.userType !== 'store') return res.status(400).json({ message: 'User is not a store' });
+    if (user.userType !== 'kennel') return res.status(400).json({ message: 'User is not a kennel partner' });
 
-    if (action === 'approve') {
-      user.storeApproved = true;
-      user.storeRejected = false;
-    } else {
-      user.storeApproved = false;
-      user.storeRejected = true;
+    if (action === 'reject') {
+      // Simplest way to reject is just to delete the account so they can try again, or mark as rejected.
+      // For now we'll just delete them since they're unapproved anyway.
+      await User.findByIdAndDelete(req.params.id);
+      return res.json({ message: 'Kennel application rejected and account removed.' });
     }
+
+    user.isApproved = true;
+    user.storeApproved = true; // For legacy matching just in case
     await user.save();
 
-    // Send email notification
+    // Send email notification (optional)
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: user.email,
-      subject: action === 'approve' ? 'Your store has been approved! - Peto' : 'Store application update - Peto',
-      text: action === 'approve'
-        ? `Congratulations! Your store "${user.storeName}" has been approved. You can now list pets and be visible in the Pet Stores section.`
-        : `We're sorry, but your store application for "${user.storeName}" was not approved at this time. Please contact support for more information.`
+      subject: 'Your Kennel Partnership has been approved! - Peto',
+      text: `Congratulations! Your Kennel account has been approved. You can now list pets publicly.`
     };
     transporter.sendMail(mailOptions).catch(err => console.error('Email error:', err));
 
-    res.json({ message: `Store ${action}d successfully` });
+    res.json({ message: `Kennel approved successfully` });
   } catch (error) {
-    console.error('Admin store approval error:', error);
+    console.error('Admin kennel approval error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// --- FEEDBACK ENDPOINTS ---
+app.post('/api/feedback', protect, async (req, res) => {
+  try {
+    const { type, priority, comment } = req.body;
+    if (!comment) return res.status(400).json({ message: 'Comment is required' });
+
+    const feedback = new Feedback({
+      userId: req.user.userId,
+      type: type || 'suggestion',
+      priority: priority || 'low',
+      comment,
+      status: 'pending'
+    });
+    
+    await feedback.save();
+    res.status(201).json({ message: 'Feedback submitted successfully', feedback });
+  } catch (error) {
+    console.error('Submit feedback error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+app.get('/api/feedback/me', protect, async (req, res) => {
+  try {
+    const feedbacks = await Feedback.find({ userId: req.user.userId }).sort({ createdAt: -1 });
+    res.json(feedbacks);
+  } catch (error) {
+    console.error('Get my feedback error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+app.get('/api/admin/feedback', protect, isAdmin, async (req, res) => {
+  try {
+    const feedbacks = await Feedback.find()
+      .populate('userId', 'name email avatar userType')
+      .sort({ status: -1, createdAt: -1 }); // Pending first, then newest
+    res.json(feedbacks);
+  } catch (error) {
+    console.error('Admin get feedback error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+app.put('/api/admin/feedback/:id', protect, isAdmin, async (req, res) => {
+  try {
+    const { status } = req.body;
+    if (!['pending', 'resolved'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+
+    const feedback = await Feedback.findById(req.params.id);
+    if (!feedback) return res.status(404).json({ message: 'Feedback not found' });
+
+    feedback.status = status;
+    feedback.updatedAt = Date.now();
+    await feedback.save();
+
+    res.json({ message: 'Feedback status updated', feedback });
+  } catch (error) {
+    console.error('Admin update feedback error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

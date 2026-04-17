@@ -144,6 +144,18 @@ html {
   }
 }
 
+@keyframes blob {
+  0% { transform: translate(0px, 0px) scale(1); }
+  33% { transform: translate(30px, -50px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.9); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
+
+@keyframes heart-float {
+  0% { transform: translateY(0) scale(1) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(-300px) scale(1.5) rotate(45deg); opacity: 0; }
+}
+
 /* Animation utility classes */
 .animate-fadeIn {
   animation: fadeIn 0.5s ease-out forwards;
@@ -185,12 +197,22 @@ html {
   animation: slideDown 0.3s ease-out forwards;
 }
 
+.animate-blob {
+  animation: blob 7s infinite;
+}
+
+.heart-float {
+  animation: heart-float 4s ease-in infinite forwards;
+}
+
 /* Animation delays */
 .animation-delay-100 { animation-delay: 100ms; }
 .animation-delay-200 { animation-delay: 200ms; }
 .animation-delay-300 { animation-delay: 300ms; }
 .animation-delay-400 { animation-delay: 400ms; }
 .animation-delay-500 { animation-delay: 500ms; }
+.animation-delay-2000 { animation-delay: 2s; }
+.animation-delay-4000 { animation-delay: 4s; }
 
 /* Skeleton loading shimmer */
 .skeleton-shimmer {
@@ -474,103 +496,107 @@ html {
   animation: kennelBadgeShine 4s ease-in-out infinite;
 }
 
-/* ===== Floating Pet Dating Indicator ===== */
-.pet-dating-floating-indicator {
-  position: fixed;
-  top: 88px;
-  right: 24px;
-  z-index: 40;
-  cursor: pointer;
-  animation: floatingDatingEnter 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-  animation-delay: 0.5s;
+/* ===== Floating Navigation Indicator ===== */
+.floating-nav-indicator {
+  transition: all 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-@keyframes floatingDatingEnter {
-  from {
-    opacity: 0;
-    transform: translateX(30px) scale(0.8);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0) scale(1);
-  }
+.floating-nav-indicator:hover {
+  transform: translateY(-3px) scale(1.04);
 }
 
-.pet-dating-floating-inner {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 16px 10px 10px;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(244, 63, 94, 0.15);
-  border-radius: 16px;
-  box-shadow:
-    0 4px 20px rgba(244, 63, 94, 0.12),
-    0 2px 8px rgba(0, 0, 0, 0.04),
-    0 0 0 1px rgba(255, 255, 255, 0.6) inset;
-  transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+.floating-nav-right {
+  animation: floatingNavEnterRight 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation-delay: 0.3s;
 }
 
-.pet-dating-floating-indicator:hover .pet-dating-floating-inner {
-  transform: translateY(-2px);
-  border-color: rgba(244, 63, 94, 0.35);
-  box-shadow:
-    0 8px 28px rgba(244, 63, 94, 0.2),
-    0 4px 12px rgba(0, 0, 0, 0.06),
-    0 0 0 1px rgba(255, 255, 255, 0.8) inset;
+.floating-nav-left {
+  animation: floatingNavEnterLeft 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation-delay: 0.3s;
 }
 
-.pet-dating-floating-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #f43f5e, #ec4899);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(244, 63, 94, 0.35);
-  flex-shrink: 0;
-  animation: floatingIconPulse 2.5s ease-in-out infinite;
+@keyframes floatingNavEnterRight {
+  from { opacity: 0; transform: translateX(60px) scale(0.7); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
 }
 
-@keyframes floatingIconPulse {
-  0%, 100% { transform: scale(1); box-shadow: 0 4px 12px rgba(244, 63, 94, 0.35); }
-  50% { transform: scale(1.05); box-shadow: 0 6px 18px rgba(244, 63, 94, 0.5); }
+@keyframes floatingNavEnterLeft {
+  from { opacity: 0; transform: translateX(-60px) scale(0.7); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
 }
 
-.pet-dating-floating-text {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.2;
+/* Spinning gradient border */
+.floating-nav-gradient-spin {
+  background-size: 300% 300%;
+  animation: gradientSpin 3s linear infinite;
 }
 
-.pet-dating-floating-arrow {
-  animation: floatingArrowBounce 1.8s ease-in-out infinite;
-  flex-shrink: 0;
+@keyframes gradientSpin {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
-@keyframes floatingArrowBounce {
-  0%, 100% { transform: translateX(0); opacity: 0.6; }
-  50% { transform: translateX(4px); opacity: 1; }
+/* Heart pulse glow */
+.floating-nav-heart {
+  animation: floatingHeartGlow 2s ease-in-out infinite;
 }
 
-/* Responsive: hide text on small screens */
+@keyframes floatingHeartGlow {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.2); }
+}
+
+/* Heart icon beat */
+.floating-nav-heart-icon {
+  animation: heartBeatNav 1.5s ease-in-out infinite;
+}
+
+@keyframes heartBeatNav {
+  0%, 100% { transform: scale(1); }
+  15% { transform: scale(1.2); }
+  30% { transform: scale(1); }
+  45% { transform: scale(1.15); }
+  60% { transform: scale(1); }
+}
+
+.floating-nav-arrow {
+  animation: floatingNavArrow 2s ease-in-out infinite;
+}
+
+@keyframes floatingNavArrow {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(3px); }
+}
+
+.floating-nav-arrow.rotate-180 {
+  animation: floatingNavArrowReverse 2s ease-in-out infinite;
+}
+
+@keyframes floatingNavArrowReverse {
+  0%, 100% { transform: rotate(180deg) translateX(0); }
+  50% { transform: rotate(180deg) translateX(3px); }
+}
+
+/* Responsive: compact on small screens */
 @media (max-width: 640px) {
-  .pet-dating-floating-indicator {
-    top: 76px;
-    right: 12px;
-  }
-  .pet-dating-floating-text {
+  .floating-nav-indicator .floating-nav-gradient-spin {
     display: none;
   }
-  .pet-dating-floating-arrow {
+  .floating-nav-indicator > div:last-child {
+    border: 2px solid rgba(244, 63, 94, 0.5);
+  }
+  .floating-nav-indicator span,
+  .floating-nav-indicator .floating-nav-arrow {
     display: none;
   }
-  .pet-dating-floating-inner {
-    padding: 8px;
-    border-radius: 12px;
+  .floating-nav-right {
+    right: 12px !important;
+    top: 76px !important;
+  }
+  .floating-nav-left {
+    left: 12px !important;
+    top: 76px !important;
   }
 }
 
