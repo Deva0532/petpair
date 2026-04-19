@@ -169,6 +169,7 @@ export const getPets = async (
         if (filters.houseTrained !== undefined) params.append('houseTrained', filters.houseTrained.toString());
         if (filters.spayedNeutered !== undefined) params.append('spayedNeutered', filters.spayedNeutered.toString());
         if (filters.specialNeeds !== undefined) params.append('specialNeeds', filters.specialNeeds.toString());
+        if (filters.q) params.append('q', filters.q);
 
         const response = await fetch(`${API_BASE}/pets?${params.toString()}`);
         if (!response.ok) {

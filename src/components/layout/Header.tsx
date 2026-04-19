@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   BellIcon,
   UserCircleIcon,
@@ -33,6 +33,8 @@ export const Header: React.FC<HeaderProps> = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -172,14 +174,18 @@ export const Header: React.FC<HeaderProps> = () => {
 
           {/* Search Bar - Desktop */}
           <div className="hidden md:flex flex-1 max-w-xl mx-12">
-            <div className="relative w-full group">
-              <MagnifyingGlassIcon className="absolute left-5 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-300 group-focus-within:text-violet-500 transition-colors" />
+            <form onSubmit={(e) => { e.preventDefault(); if (searchQuery.trim()) navigate(`/?q=${encodeURIComponent(searchQuery.trim())}`); }} className="relative w-full group">
+              <button type="submit" className="absolute left-5 top-1/2 transform -translate-y-1/2">
+                <MagnifyingGlassIcon className="w-5 h-5 text-gray-300 group-focus-within:text-violet-500 transition-colors" />
+              </button>
               <input
                 type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search pets, breeds, locations..."
                 className="w-full pl-12 pr-6 py-3 bg-gray-50 border-0 rounded-full focus:ring-0 focus:bg-gray-100 transition-all text-sm font-medium text-gray-700 placeholder-gray-400"
               />
-            </div>
+            </form>
           </div>
 
           {/* Navigation - Desktop */}
@@ -316,14 +322,18 @@ export const Header: React.FC<HeaderProps> = () => {
           <div className="md:hidden py-4 border-t border-gray-100 animate-slideDown">
             <div className="space-y-4 px-2">
               {/* Mobile Search */}
-              <div className="relative">
-                <MagnifyingGlassIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <form onSubmit={(e) => { e.preventDefault(); if (searchQuery.trim()) { navigate(`/?q=${encodeURIComponent(searchQuery.trim())}`); setIsMobileMenuOpen(false); } }} className="relative">
+                <button type="submit" className="absolute inset-y-0 left-0 pl-3 flex items-center">
+                  <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                </button>
                 <input
                   type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-xl leading-5 bg-gray-50 placeholder-gray-500 focus:outline-none focus:bg-white focus:ring-2 focus:ring-violet-500 focus:border-violet-500 sm:text-sm transition-all"
                   placeholder="Search pets..."
-                  className="w-full pl-12 pr-4 py-3 bg-gray-50 border-0 rounded-xl focus:ring-0 text-gray-900 font-medium"
                 />
-              </div>
+              </form>
 
               {user ? (
                 <div className="space-y-1">

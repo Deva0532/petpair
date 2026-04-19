@@ -785,6 +785,17 @@ app.get('/api/pets', async (req, res) => {
     const query = { status: { $ne: 'deleted' } };
 
     // Apply filters from query parameters
+    if (req.query.q) {
+      const searchRegex = new RegExp(req.query.q, 'i');
+      query.$or = [
+        { name: searchRegex },
+        { breed: searchRegex },
+        { customBreed: searchRegex },
+        { location: searchRegex },
+        { type: searchRegex }
+      ];
+    }
+
     if (req.query.type && req.query.type !== 'all') {
       query.type = req.query.type;
     }
@@ -1029,6 +1040,16 @@ app.post('/api/auth/set-user-type', protect, async (req, res) => {
       user.storeAddress = storeAddress || user.location;
       user.isApproved = false; // Require admin approval for kennels
       user.storeRejected = false;
+      
+      // Notify admins about the new kennel request
+      const admins = await User.find({ role: 'admin' });
+      for (const admin of admins) {
+        await new Notification({
+          userId: admin._id,
+          title: 'New Kennel Approval Request',
+          message: `${user.name} has requested approval for their kennel "${storeName || 'Unknown store'}".`
+        }).save();
+      }
     } else {
       user.isApproved = true; // Normal users are approved by default
     }
@@ -1637,6 +1658,13 @@ app.post('/api/admin/kennels/:id/approve', protect, isAdmin, async (req, res) =>
     user.storeApproved = true; // For legacy matching just in case
     await user.save();
 
+    // Send in-app notification
+    await new Notification({
+      userId: user._id,
+      title: 'Kennel Account Approved',
+      message: 'Congratulations! Your Kennel account has been approved. You can now post unlimited pet listings.'
+    }).save();
+
     // Send email notification (optional)
     const mailOptions = {
       from: process.env.EMAIL_USER,
@@ -1668,6 +1696,22 @@ app.post('/api/feedback', protect, async (req, res) => {
     });
     
     await feedback.save();
+
+    // Notify admins about the new feedback
+    try {
+      const admins = await User.find({ role: 'admin' });
+      const user = await User.findById(req.user.userId);
+      for (const admin of admins) {
+        await new Notification({
+          userId: admin._id,
+          title: `New Feedback Submitted: ${type}`,
+          message: `${user ? user.name : 'A user'} submitted new ${type} feedback.`
+        }).save();
+      }
+    } catch (notifErr) {
+      console.error('Error sending feedback notification to admins:', notifErr);
+    }
+
     res.status(201).json({ message: 'Feedback submitted successfully', feedback });
   } catch (error) {
     console.error('Submit feedback error:', error);
@@ -1710,6 +1754,19 @@ app.put('/api/admin/feedback/:id', protect, isAdmin, async (req, res) => {
     feedback.status = status;
     feedback.updatedAt = Date.now();
     await feedback.save();
+
+    // Notify the user about their feedback status update
+    if (feedback.userId) {
+      try {
+        await new Notification({
+          userId: feedback.userId,
+          title: 'Feedback Status Updated',
+          message: `Your feedback regarding "${feedback.type}" has been marked as ${status}.`
+        }).save();
+      } catch (notifErr) {
+        console.error('Error sending feedback update notification:', notifErr);
+      }
+    }
 
     res.json({ message: 'Feedback status updated', feedback });
   } catch (error) {

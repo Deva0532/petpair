@@ -89,11 +89,6 @@ export const PetCard: React.FC<PetCardProps> = ({
           : 'bg-white rounded-[1.25rem] border border-slate-100/80 hover:border-slate-200/80'
       }`}>
 
-        {/* Kennel premium top accent bar */}
-        {isKennel && (
-          <div className="kennel-accent-bar-premium" />
-        )}
-
         {/* Image Section */}
         <div className="pet-card-image-wrapper relative aspect-[4/3.5] overflow-hidden bg-slate-100">
           {/* Shimmer loading skeleton */}

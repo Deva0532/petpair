@@ -580,23 +580,46 @@ html {
 
 /* Responsive: compact on small screens */
 @media (max-width: 640px) {
-  .floating-nav-indicator .floating-nav-gradient-spin {
-    display: none;
-  }
   .floating-nav-indicator > div:last-child {
-    border: 2px solid rgba(244, 63, 94, 0.5);
+    padding: 8px 12px;
+    gap: 8px;
+    border-radius: 14px;
   }
-  .floating-nav-indicator span,
+  .floating-nav-indicator .floating-nav-gradient-spin {
+    border-radius: 14px;
+  }
+  /* Make icon smaller on mobile */
+  .floating-nav-indicator > div:last-child > div:first-child > div:last-child {
+    width: 32px;
+    height: 32px;
+  }
+  .floating-nav-indicator > div:last-child > div:first-child > div:last-child svg {
+    width: 14px;
+    height: 14px;
+  }
+  /* Slightly smaller text */
+  .floating-nav-indicator > div:last-child > div:nth-child(2) > span:first-child {
+    font-size: 11px;
+  }
+  .floating-nav-indicator > div:last-child > div:nth-child(2) > span:last-child {
+    font-size: 9px;
+  }
+  /* Smaller arrow circle */
   .floating-nav-indicator .floating-nav-arrow {
-    display: none;
+    width: 26px;
+    height: 26px;
+  }
+  .floating-nav-indicator .floating-nav-arrow svg {
+    width: 12px;
+    height: 12px;
   }
   .floating-nav-right {
-    right: 12px !important;
-    top: 76px !important;
+    right: 10px !important;
+    top: 72px !important;
   }
   .floating-nav-left {
-    left: 12px !important;
-    top: 76px !important;
+    left: 10px !important;
+    top: 72px !important;
   }
 }
 
@@ -765,4 +788,21 @@ input[type="checkbox"] {
   .no-print {
     display: none !important;
   }
+}
+
+/* Ambient Background Animations */
+@keyframes ambient-float {
+  0% { transform: translateY(0) rotate(0deg) scale(1); opacity: 0; }
+  10% { opacity: var(--ambient-opacity, 0.4); }
+  90% { opacity: var(--ambient-opacity, 0.4); }
+  100% { transform: translateY(-120vh) rotate(var(--ambient-rotate, 180deg)) scale(var(--ambient-scale, 1.2)); opacity: 0; }
+}
+
+.ambient-element {
+  position: absolute;
+  pointer-events: none;
+  z-index: 0;
+  animation: ambient-float var(--ambient-duration, 15s) linear infinite;
+  animation-delay: var(--ambient-delay, 0s);
+  bottom: -50px;
 }
