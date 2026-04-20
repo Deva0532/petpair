@@ -42,17 +42,15 @@ export const UserProfile: React.FC = () => {
   };
 
   return (
-    <div className={`min-h-screen relative overflow-x-hidden ${isAdmin ? 'bg-[#0B1120]' : isKennel ? 'bg-[#FCFAF8]' : 'bg-slate-50'}`}>
+    <div className={`min-h-screen relative overflow-x-hidden ${isAdmin ? 'bg-cyan-50/30' : isKennel ? 'bg-[#FCFAF8]' : 'bg-slate-50'}`}>
       {/* Dynamic Background */}
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
         {isAdmin ? (
           /* Cyberspace Admin Aesthetic */
           <>
-            <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-[120px] -translate-y-1/3 translate-x-1/3"></div>
-            <div className="absolute top-1/2 left-0 w-[800px] h-[800px] bg-cyan-500/5 rounded-full blur-[100px] -translate-x-1/4"></div>
-            <div className="absolute bottom-0 right-1/4 w-[700px] h-[700px] bg-indigo-500/10 rounded-full blur-[130px] translate-y-1/4"></div>
-            {/* Tech grid overlay */}
-            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik02MCAwaC0xdjYwaDFWMEg2MHptMCA2MGgtMXYtMWgxVjYwSDYweiIgZmlsbD0icmdiYSg1NiwgMTg5LCAyNTUsIDAuMDUpIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiLz4KPC9zdmc+')] opacity-50"></div>
+            <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-cyan-400/20 rounded-full blur-[100px] -translate-y-1/3 translate-x-1/3"></div>
+            <div className="absolute top-1/2 left-0 w-[800px] h-[800px] bg-blue-300/15 rounded-full blur-[120px] -translate-x-1/4"></div>
+            <div className="absolute bottom-0 right-1/4 w-[700px] h-[700px] bg-sky-400/20 rounded-full blur-[100px] translate-y-1/4"></div>
           </>
         ) : isKennel ? (
           /* Warm Premium Kennel Aesthetic */

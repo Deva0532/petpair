@@ -380,9 +380,9 @@ export const AdminNotifications: React.FC = () => {
                                                                 <div className="text-xs text-gray-500 truncate">{user.email}</div>
                                                             </div>
                                                         </div>
-                                                        {user.storeName && (
-                                                            <span className="hidden sm:inline-block ml-2 px-2.5 py-1 rounded-md text-[10px] font-bold bg-pink-100 text-pink-700 whitespace-nowrap">
-                                                                {user.storeName}
+                                                        {(user.userType === 'store' || user.userType === 'kennel') && (
+                                                            <span className="hidden sm:inline-block ml-2 px-2.5 py-1 rounded-md text-[10px] font-bold bg-amber-100 text-amber-700 whitespace-nowrap">
+                                                                Kennel
                                                             </span>
                                                         )}
                                                     </label>

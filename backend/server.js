@@ -548,6 +548,9 @@ const notificationSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   title: { type: String, required: true },
   message: { type: String, required: true },
+  senderName: { type: String },
+  senderRole: { type: String },
+  senderAvatar: { type: String },
   read: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now }
 });
@@ -923,6 +926,7 @@ app.put('/api/pets/:id', protect, async (req, res) => {
     const pet = await Pet.findById(req.params.id);
     if (!pet) return res.status(404).json({ message: 'Pet not found' });
     if (pet.ownerId.toString() !== req.user.userId) return res.status(403).json({ message: 'Not authorized to edit this pet' });
+    const oldStatus = pet.status;
     const allowedUpdates = ['name', 'breed', 'customBreed', 'age', 'type', 'customType', 'gender', 'price', 'location', 'description',
       'vaccinated', 'neutered', 'availableForMating', 'availableForSale', 'featured', 'imageUrls', 'videoUrl', 'weight', 'personality',
       'careRequirements', 'medicalNotes', 'healthProblems', 'size', 'activityLevel', 'goodWithKids', 'goodWithPets', 'houseTrained',
@@ -930,6 +934,43 @@ app.put('/api/pets/:id', protect, async (req, res) => {
     allowedUpdates.forEach(field => { if (req.body[field] !== undefined) pet[field] = req.body[field]; });
     const updatedPet = await pet.save();
     await updatedPet.populate('ownerId', 'name email location phone bio');
+
+    // Notify about sold pet
+    if (oldStatus !== 'sold' && updatedPet.status === 'sold') {
+      try {
+        const owner = await User.findById(pet.ownerId);
+        if (owner) {
+          // Notify Seller
+          await new Notification({
+            userId: owner._id,
+            title: 'Your Pet Has Been Sold!',
+            message: `Congratulations! Your pet listing "${updatedPet.name}" has been marked as sold.`,
+            senderName: 'System Settings',
+            senderRole: 'system'
+          }).save();
+        }
+
+        // Notify wishlist users
+        const wishlistItems = await Wishlist.find({ petId: pet._id });
+        const userIdsToNotify = wishlistItems
+          .map(item => item.userId.toString())
+          .filter(id => owner && id !== owner._id.toString());
+          
+        for (const wUserId of userIdsToNotify) {
+          await new Notification({
+            userId: wUserId,
+            title: 'A Wishlisted Pet Was Sold',
+            message: `The pet "${updatedPet.name}" from your wishlist has just been marked as sold by the seller. Check out other available pets!`,
+            senderName: owner ? owner.name : 'Unknown Seller',
+            senderRole: owner ? owner.role : 'user',
+            senderAvatar: owner ? owner.avatar : undefined
+          }).save();
+        }
+      } catch (notifErr) {
+        console.error('Error sending sold notifications:', notifErr);
+      }
+    }
+
     res.json(updatedPet);
   } catch (error) {
     console.error('Error updating pet:', error);
@@ -1488,7 +1529,15 @@ app.get('/api/admin/users', protect, isAdmin, async (req, res) => {
   try {
     const { type, search, page = 1, limit = 20 } = req.query;
     const query = {};
-    if (type && ['individual', 'store'].includes(type)) query.userType = type;
+    if (type) {
+      if (type === 'individual') {
+        query.userType = { $in: ['individual', 'normal'] };
+      } else if (type === 'store') {
+        query.userType = { $in: ['store', 'kennel'] };
+      } else {
+        query.userType = type;
+      }
+    }
     if (search) {
       query.$or = [
         { name: { $regex: search, $options: 'i' } },
@@ -1612,6 +1661,9 @@ app.delete('/api/admin/pets/:id', protect, isAdmin, async (req, res) => {
           userId: pet.ownerId._id,
           title: 'Pet Listing Removed',
           message: `Your pet listing "${pet.name}" (${pet.breed}) has been removed. Reason: ${reason}`,
+          senderName: req.user.name,
+          senderRole: 'admin',
+          senderAvatar: req.user.avatar,
           read: false
         }).save();
       } catch (notifError) {
@@ -1811,7 +1863,10 @@ app.post('/api/admin/send-notification', protect, isAdmin, async (req, res) => {
         await new Notification({
           userId: user._id,
           title: subject,
-          message: message
+          message: message,
+          senderName: req.user.name,
+          senderRole: 'admin',
+          senderAvatar: req.user.avatar
         }).save();
 
         // Send email
@@ -1864,6 +1919,34 @@ app.put('/api/notifications/:id/read', protect, async (req, res) => {
     res.json({ message: 'Notification marked as read' });
   } catch (error) {
     console.error('Error marking notification as read:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Delete specific notification
+app.delete('/api/notifications/:id', protect, async (req, res) => {
+  try {
+    const notification = await Notification.findOneAndDelete({
+      _id: req.params.id,
+      userId: req.user.userId
+    });
+    if (!notification) {
+      return res.status(404).json({ message: 'Notification not found' });
+    }
+    res.json({ message: 'Notification deleted' });
+  } catch (error) {
+    console.error('Error deleting notification:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Clear all notifications
+app.delete('/api/notifications', protect, async (req, res) => {
+  try {
+    await Notification.deleteMany({ userId: req.user.userId });
+    res.json({ message: 'All notifications cleared' });
+  } catch (error) {
+    console.error('Error clearing notifications:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

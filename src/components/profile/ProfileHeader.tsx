@@ -114,11 +114,11 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ onPhotoChange }) =
 
   return (
     <div className="pt-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-      <div className={`relative overflow-hidden rounded-[2.5rem] p-8 md:p-12 shadow-2xl backdrop-blur-2xl border ${isAdmin ? 'bg-[#0F172A]/80 border-cyan-500/30 shadow-cyan-900/20' : isKennel ? 'bg-white/90 border-amber-200/50 shadow-amber-900/5' : 'bg-white/80 border-white shadow-violet-900/5'}`}>
+      <div className={`relative overflow-hidden rounded-[2.5rem] p-8 md:p-12 shadow-2xl backdrop-blur-2xl border ${isAdmin ? 'bg-white/90 border-cyan-200/50 shadow-cyan-900/5' : isKennel ? 'bg-white/90 border-amber-200/50 shadow-amber-900/5' : 'bg-white/80 border-white shadow-violet-900/5'}`}>
         
         {/* Decorative inner glow */}
         {isAdmin ? (
-          <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-gradient-to-br from-cyan-400/20 to-blue-600/20 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/4 mix-blend-screen opacity-70 pointer-events-none"></div>
+          <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-gradient-to-br from-cyan-200/40 to-blue-200/40 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/4 mix-blend-multiply opacity-70 pointer-events-none"></div>
         ) : isKennel ? (
           <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-gradient-to-br from-amber-200/40 to-rose-200/40 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/4 mix-blend-multiply opacity-70 pointer-events-none"></div>
         ) : (
@@ -161,7 +161,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ onPhotoChange }) =
           {/* Profile Info */}
           <div className="flex-1 text-center xl:text-left flex flex-col justify-center h-full pt-2">
             <div className="flex flex-col xl:flex-row xl:items-center gap-3 xl:gap-5 mb-3">
-              <h1 className={`text-3xl md:text-5xl font-black tracking-tight ${isAdmin ? 'bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent' : isKennel ? 'bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent' : 'text-slate-900'}`}>
+              <h1 className={`text-3xl md:text-5xl font-black tracking-tight ${isAdmin ? 'bg-gradient-to-r from-cyan-900 to-blue-800 bg-clip-text text-transparent' : isKennel ? 'bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent' : 'text-slate-900'}`}>
                 {user.name}
               </h1>
               
@@ -187,14 +187,14 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ onPhotoChange }) =
               </div>
             </div>
 
-            <div className={`flex items-center justify-center xl:justify-start gap-2 mb-4 font-medium ${isAdmin ? 'text-cyan-200/60' : isKennel ? 'text-amber-700/80' : 'text-slate-500'}`}>
+            <div className={`flex items-center justify-center xl:justify-start gap-2 mb-4 font-medium ${isAdmin ? 'text-cyan-700/80' : isKennel ? 'text-amber-700/80' : 'text-slate-500'}`}>
               <MapPinIcon className="w-5 h-5" />
               <span>{user.location}</span>
               <span className="opacity-40">•</span>
               <span>Member since {new Date(user.joinedAt || Date.now()).getFullYear()}</span>
             </div>
 
-            <p className={`text-lg max-w-2xl mx-auto xl:mx-0 leading-relaxed font-medium ${isAdmin ? 'text-slate-300' : isKennel ? 'text-slate-600' : 'text-slate-600'}`}>
+            <p className={`text-lg max-w-2xl mx-auto xl:mx-0 leading-relaxed font-medium ${isAdmin ? 'text-slate-600' : isKennel ? 'text-slate-600' : 'text-slate-600'}`}>
               {user.bio || 'Passionate pet lover and experienced breeder.'}
             </p>
           </div>

@@ -7,6 +7,7 @@ import { Card } from '../components/ui/Card';
 import { getWishlist, removeFromWishlist, addToWishlist } from '../services/petService';
 import { useAuth } from '../contexts/AuthContext';
 import { Pet } from '../types';
+import { PetCard } from '../components/pets/PetCard';
 
 interface WishlistItem {
     id: string;
@@ -262,45 +263,39 @@ const WishlistCard: React.FC<WishlistCardProps> = ({ item, onToggle, isProcessin
         );
     }
 
+    if (!status) {
+        return (
+            <PetCard
+                pet={pet}
+                isFavorited={!isRemoved}
+                onFavorite={() => onToggle(pet.id)}
+            />
+        );
+    }
+
     return (
-        <Card className={`overflow-hidden transition-all ${status ? 'opacity-75 grayscale-[30%]' : 'hover:shadow-lg'}`}>
-            <div className="relative">
+        <Card className={`overflow-hidden transition-all ${status ? 'opacity-70 grayscale hover:shadow-none' : 'hover:shadow-lg'}`}>
+            <div className="relative overflow-hidden">
                 <img
                     src={pet.image}
                     alt={pet.name}
                     className="w-full h-48 object-cover"
                 />
-                {pet.featured && !status && (
-                    <div className="absolute top-3 left-3 bg-gradient-to-r from-amber-400 to-orange-400 text-white px-3 py-1 rounded-full text-xs font-bold">
-                        ⭐ Club
-                    </div>
-                )}
-
+                
                 {/* Status Overlay */}
                 {status && (
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                        <div className={`px-4 py-2 rounded-lg font-semibold text-white ${status === 'sold' ? 'bg-amber-500' : 'bg-gray-600'
-                            }`}>
-                            {status === 'sold' ? '🏷️ This pet has been sold' : '❌ No longer available'}
-                        </div>
+                        {status === 'sold' ? (
+                            <div className="absolute transform -rotate-45 bg-amber-500 text-white font-black tracking-[0.2em] text-xl py-2 w-[150%] text-center shadow-2xl border-y-2 border-amber-300 z-10">
+                                S O L D
+                            </div>
+                        ) : (
+                            <div className="px-4 py-2 rounded-lg font-semibold text-white bg-gray-600 z-10">
+                                ❌ No longer available
+                            </div>
+                        )}
                     </div>
                 )}
-
-                <button
-                    onClick={(e) => {
-                        e.preventDefault();
-                        onToggle(pet.id);
-                    }}
-                    disabled={isProcessing}
-                    className="absolute top-3 right-3 p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-all duration-300 hover:scale-110 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed group/heart"
-                    title={isRemoved ? "Add to wishlist" : "Remove from wishlist"}
-                >
-                    {isRemoved ? (
-                        <HeartIcon className={`w-5 h-5 text-gray-600 transition-colors ${isProcessing ? 'animate-pulse' : 'hover:text-rose-500'}`} />
-                    ) : (
-                        <HeartSolidIcon className={`w-5 h-5 text-rose-500 transition-colors ${isProcessing ? 'animate-pulse' : 'group-hover/heart:text-gray-400'}`} />
-                    )}
-                </button>
             </div>
 
             <div className="p-5">
@@ -335,16 +330,17 @@ const WishlistCard: React.FC<WishlistCardProps> = ({ item, onToggle, isProcessin
                         </div>
                     </div>
                 )}
-
-                <div className="flex space-x-2">
-                    {!status && (
-                        <Link to={`/pet/${pet.id}`} className="w-full">
-                            <Button className="w-full bg-gradient-to-r from-violet-600 to-purple-600">
-                                View Pet
-                            </Button>
-                        </Link>
-                    )}
-                </div>
+                
+                <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full text-gray-500 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-colors"
+                    onClick={() => item.pet && onToggle(item.pet.id)}
+                    disabled={isProcessing}
+                >
+                    <TrashIcon className="w-4 h-4 mr-2" />
+                    {isProcessing ? 'Processing...' : (isRemoved ? 'Restore wishlist' : 'Remove from wishlist')}
+                </Button>
             </div>
         </Card>
     );

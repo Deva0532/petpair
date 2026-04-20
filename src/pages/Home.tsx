@@ -104,7 +104,14 @@ export const Home: React.FC = () => {
   const { user } = useAuth();
   const { showToast } = useToast();
   const [searchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState<'sell' | 'dating'>('sell');
+  const modeParam = searchParams.get('mode') as 'sell' | 'dating';
+  const [activeTab, setActiveTab] = useState<'sell' | 'dating'>(modeParam || 'sell');
+
+  useEffect(() => {
+    if (modeParam && (modeParam === 'sell' || modeParam === 'dating')) {
+      setActiveTab(modeParam);
+    }
+  }, [modeParam]);
   const [pets, setPets] = useState<Pet[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -198,6 +205,7 @@ export const Home: React.FC = () => {
   // Only filter out user's own pets client-side
   // All other filtering should be done on backend for proper pagination
   const filteredPets = pets.filter(pet => {
+    if (pet.status === 'sold') return false;
     // If logged in, filter out own pets
     if (user && pet.owner && (pet.owner.id === user.id || (pet.owner as any)._id === user.id)) return false;
     return true;
@@ -302,62 +310,6 @@ export const Home: React.FC = () => {
                 ? 'Browse thousands of verified pets from trusted sellers and breeders near you.'
                 : 'Discover wonderful companions in your area for your pet to date, play, or breed with.'}
             </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Floating Navigation Pill - Light Glass Design */}
-      <div 
-        className={`floating-nav-indicator fixed z-50 cursor-pointer group ${activeTab === 'sell' ? 'top-[92px] right-6 floating-nav-right' : 'top-[92px] left-6 floating-nav-left'}`}
-        onClick={activeTab === 'sell' ? switchToDating : switchToSell}
-      >
-        {/* Soft gradient glow behind */}
-        <div className={`absolute -inset-[2px] rounded-2xl opacity-70 group-hover:opacity-100 transition-opacity floating-nav-gradient-spin ${
-          activeTab === 'sell'
-            ? 'bg-gradient-to-r from-rose-400 via-pink-400 to-fuchsia-400'
-            : 'bg-gradient-to-r from-violet-400 via-fuchsia-400 to-orange-400'
-        }`} />
-        
-        {/* Inner content - Light glass */}
-        <div className="relative bg-white/90 backdrop-blur-xl rounded-2xl px-5 py-3.5 flex items-center gap-3.5 shadow-xl shadow-black/5">
-          {/* Icon */}
-          <div className="relative">
-            <div className={`absolute inset-0 rounded-xl blur-md opacity-30 floating-nav-heart ${
-              activeTab === 'sell' ? 'bg-rose-400' : 'bg-violet-400'
-            }`} />
-            <div className={`relative w-10 h-10 rounded-xl flex items-center justify-center shadow-lg ${
-              activeTab === 'sell'
-                ? 'bg-gradient-to-br from-rose-400 to-pink-500'
-                : 'bg-gradient-to-br from-violet-400 to-fuchsia-500'
-            }`}>
-              {activeTab === 'sell' 
-                ? <HeartSolidIcon className="w-5 h-5 text-white floating-nav-heart-icon" />
-                : <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
-              }
-            </div>
-          </div>
-          
-          {/* Text */}
-          <div className="flex flex-col mr-1">
-            <span className={`text-[13px] font-extrabold leading-tight tracking-wide ${
-              activeTab === 'sell' ? 'text-rose-600' : 'text-violet-600'
-            }`}>
-              {activeTab === 'sell' ? 'Pet Dating' : 'Marketplace'}
-            </span>
-            <span className={`text-[11px] font-semibold leading-tight ${
-              activeTab === 'sell' ? 'text-rose-400' : 'text-violet-400'
-            }`}>
-              {activeTab === 'sell' ? 'Find a match →' : '← Browse pets'}
-            </span>
-          </div>
-          
-          {/* Arrow indicator */}
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center floating-nav-arrow ${
-            activeTab === 'sell'
-              ? 'bg-rose-50 text-rose-500'
-              : 'bg-violet-50 text-violet-500'
-          } ${activeTab === 'dating' ? 'rotate-180' : ''}`}>
-            <ArrowRightIcon className="w-4 h-4" />
           </div>
         </div>
       </div>

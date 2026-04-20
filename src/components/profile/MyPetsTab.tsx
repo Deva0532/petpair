@@ -516,7 +516,9 @@ export const MyPetsTab: React.FC = () => {
   const [editingPet, setEditingPet] = useState<Pet | null>(null);
   const [deletingPet, setDeletingPet] = useState<Pet | null>(null);
   const [markingSold, setMarkingSold] = useState<Pet | null>(null);
+  const [markingAvailable, setMarkingAvailable] = useState<Pet | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [viewMode, setViewMode] = useState<'active' | 'sold'>('active');
 
   const fetchUserPets = async () => {
     if (!user) return;
@@ -561,6 +563,20 @@ export const MyPetsTab: React.FC = () => {
       setMarkingSold(null);
     } catch (error) {
       console.error('Failed to mark pet as sold:', error);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleMarkAvailable = async () => {
+    if (!markingAvailable) return;
+    setActionLoading(true);
+    try {
+      await updatePet(markingAvailable.id, { status: 'active' });
+      await fetchUserPets();
+      setMarkingAvailable(null);
+    } catch (error) {
+      console.error('Failed to mark pet as active:', error);
     } finally {
       setActionLoading(false);
     }
@@ -611,8 +627,23 @@ export const MyPetsTab: React.FC = () => {
         </Card>
       </div>
 
+      <div className="flex gap-4 mb-6 border-b border-gray-200">
+        <button 
+          onClick={() => setViewMode('active')} 
+          className={`pb-3 px-2 font-semibold text-sm transition-colors border-b-2 ${viewMode === 'active' ? 'border-violet-600 text-violet-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+        >
+          Current Listed Pets ({activePets.length})
+        </button>
+        <button 
+          onClick={() => setViewMode('sold')} 
+          className={`pb-3 px-2 font-semibold text-sm transition-colors border-b-2 ${viewMode === 'sold' ? 'border-amber-500 text-amber-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+        >
+          Sold Pets ({soldPets.length})
+        </button>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {pets.map((pet) => {
+        {(viewMode === 'active' ? activePets : soldPets).map((pet) => {
           const hasImage = pet.imageUrls && pet.imageUrls.length > 0 && !pet.image?.includes('placehold.co');
           return (
           <Card key={pet.id} className={`overflow-hidden hover:shadow-lg transition-shadow ${pet.status === 'sold' ? 'opacity-75' : ''}`}>
@@ -659,7 +690,11 @@ export const MyPetsTab: React.FC = () => {
                     <EyeIcon className="w-4 h-4" /><span>View</span>
                   </Button>
                 </Link>
-                {pet.status !== 'sold' && (
+                {pet.status === 'sold' ? (
+                  <Button variant="outline" size="sm" className="flex items-center space-x-1 text-emerald-600 border-emerald-300 hover:bg-emerald-50" onClick={() => setMarkingAvailable(pet)}>
+                    <CheckCircleIcon className="w-4 h-4" /><span>Mark Available</span>
+                  </Button>
+                ) : (
                   <>
                     <Button variant="outline" size="sm" className="flex items-center space-x-1" onClick={() => setEditingPet(pet)}>
                       <PencilIcon className="w-4 h-4" /><span>Edit</span>
@@ -679,7 +714,7 @@ export const MyPetsTab: React.FC = () => {
         })}
       </div>
 
-      {pets.length === 0 && (
+      {(viewMode === 'active' ? activePets : soldPets).length === 0 && (
         <div className="text-center py-16">
           <div className="text-gray-400 mb-4">
             <svg className="mx-auto h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -713,6 +748,17 @@ export const MyPetsTab: React.FC = () => {
           confirmClassName="flex-1 bg-amber-600 hover:bg-amber-700"
           onConfirm={handleMarkSold}
           onCancel={() => setMarkingSold(null)}
+          loading={actionLoading}
+        />
+      )}
+      {markingAvailable && (
+        <ConfirmModal
+          title="Mark as Available"
+          message={`Are you sure you want to relist "${markingAvailable.name}" as available for sale/adoption?`}
+          confirmText="Mark Available"
+          confirmClassName="flex-1 bg-emerald-600 hover:bg-emerald-700"
+          onConfirm={handleMarkAvailable}
+          onCancel={() => setMarkingAvailable(null)}
           loading={actionLoading}
         />
       )}
