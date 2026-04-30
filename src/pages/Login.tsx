@@ -37,6 +37,7 @@ export const Login: React.FC = () => {
           const decodedPayload = JSON.parse(atob(base64));
           if (decodedPayload.role === 'admin') {
             navigate('/');
+            setTimeout(() => window.dispatchEvent(new Event('platformSelectorAfterLogin')), 100);
             return;
           }
           if (decodedPayload.isNewUser) {
@@ -48,6 +49,7 @@ export const Login: React.FC = () => {
         }
       }
       navigate('/');
+      setTimeout(() => window.dispatchEvent(new Event('platformSelectorAfterLogin')), 100);
     } else {
       setErrors({ general: 'Invalid email or password' });
     }
@@ -69,6 +71,7 @@ export const Login: React.FC = () => {
 
             if (isAdminUser) {
               navigate('/');
+              setTimeout(() => window.dispatchEvent(new Event('platformSelectorAfterLogin')), 100);
               return;
             }
           } catch (e) {
@@ -81,6 +84,7 @@ export const Login: React.FC = () => {
           navigate('/select-user-type');
         } else {
           navigate('/');
+          setTimeout(() => window.dispatchEvent(new Event('platformSelectorAfterLogin')), 100);
         }
       } else {
         setErrors({ general: 'Failed to sign in with Google' });

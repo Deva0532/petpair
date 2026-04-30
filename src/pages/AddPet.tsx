@@ -400,8 +400,19 @@ export const AddPet: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50 via-white to-violet-50 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-rose-50 via-white to-violet-50 pt-4 pb-8">
       <div className="max-w-3xl mx-auto px-4">
+        {/* Back button */}
+        <button
+          onClick={() => navigate(-1)}
+          className="inline-flex items-center gap-1.5 mb-4 text-sm text-gray-500 hover:text-violet-600 font-medium transition-colors group"
+        >
+          <svg className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+          </svg>
+          Back
+        </button>
+
         <div className="text-center mb-6">
           <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-violet-600 to-rose-600 bg-clip-text text-transparent mb-2">
             Post Your Pet

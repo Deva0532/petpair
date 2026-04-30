@@ -12,6 +12,7 @@ import {
 import { Button } from '../ui/Button';
 import { useAuth } from '../../contexts/AuthContext.tsx';
 import { getWishlist } from '../../services/petService';
+import { PlatformSelector } from './PlatformSelector';
 
 interface Notification {
   _id: string;
@@ -35,12 +36,53 @@ export const Header: React.FC<HeaderProps> = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showModeSwitcher, setShowModeSwitcher] = useState(false);
+  const [isWelcomeSelector, setIsWelcomeSelector] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Show platform selector on first visit (not refresh/back navigation)
+  useEffect(() => {
+    const hasSeenSelector = sessionStorage.getItem('peto_platform_seen');
+    if (hasSeenSelector) return;
+
+    // Detect true first visit vs refresh/back-forward navigation
+    // navigation.type 'navigate' = user typed URL / clicked a link from external site
+    // navigation.type 'reload' = page refresh
+    // navigation.type 'back_forward' = browser back/forward
+    const navEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
+    const navType = navEntries.length > 0 ? navEntries[0].type : 'navigate';
+
+    if (navType === 'navigate') {
+      // Small delay so the page renders first
+      const timer = setTimeout(() => {
+        setIsWelcomeSelector(true);
+        setShowModeSwitcher(true);
+        sessionStorage.setItem('peto_platform_seen', 'true');
+      }, 600);
+      return () => clearTimeout(timer);
+    } else {
+      // It's a reload or back/forward — mark as seen so it won't show
+      sessionStorage.setItem('peto_platform_seen', 'true');
+    }
+  }, []);
+
+  // Show platform selector after login (listen for custom event)
+  useEffect(() => {
+    const handlePostLogin = () => {
+      // Small delay after login navigation completes
+      setTimeout(() => {
+        setIsWelcomeSelector(true);
+        setShowModeSwitcher(true);
+      }, 400);
+    };
+
+    window.addEventListener('platformSelectorAfterLogin', handlePostLogin);
+    return () => window.removeEventListener('platformSelectorAfterLogin', handlePostLogin);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -112,13 +154,9 @@ export const Header: React.FC<HeaderProps> = () => {
     }
   };
 
-  // Close mode switcher and notifications when clicking outside
+  // Close notifications when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      if (showModeSwitcher && !target.closest('.mode-switcher-modal')) {
-        setShowModeSwitcher(false);
-      }
       if (isNotificationsOpen && dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsNotificationsOpen(false);
       }
@@ -126,7 +164,7 @@ export const Header: React.FC<HeaderProps> = () => {
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showModeSwitcher, isNotificationsOpen]);
+  }, [isNotificationsOpen]);
 
   const formatTimeAgo = (dateString: string) => {
     const date = new Date(dateString);
@@ -199,7 +237,7 @@ export const Header: React.FC<HeaderProps> = () => {
           <div className="hidden md:flex items-center space-x-3">
             {user ? (
               <>
-                {!isAdmin && (
+                {!isAdmin && location.pathname !== '/add-pet' && (
                   <Link
                     to="/add-pet"
                     className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-full font-bold hover:shadow-lg hover:shadow-violet-200 transition-all transform hover:-translate-y-0.5"
@@ -209,7 +247,7 @@ export const Header: React.FC<HeaderProps> = () => {
                   </Link>
                 )}
                 {/* Find Vets removed per request */}
-                <button onClick={() => setShowModeSwitcher(true)} className="px-4 py-2 text-gray-600 hover:text-violet-600 font-semibold transition-colors flex items-center gap-1.5">
+                <button onClick={() => { setIsWelcomeSelector(false); setShowModeSwitcher(true); }} className="px-4 py-2 text-gray-600 hover:text-violet-600 font-semibold transition-colors flex items-center gap-1.5">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                   </svg>
@@ -371,8 +409,8 @@ export const Header: React.FC<HeaderProps> = () => {
 
               {user ? (
                 <div className="space-y-1">
-                  {!isAdmin && (
-                    <Link to="/add-pet" className="flex items-center gap-3 px-4 py-3 text-white bg-gradient-to-r from-violet-600 to-fuchsia-600 rounded-xl font-bold shadow-lg shadow-violet-200">
+                  {!isAdmin && location.pathname !== '/add-pet' && (
+                    <Link to="/add-pet" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-white bg-gradient-to-r from-violet-600 to-fuchsia-600 rounded-xl font-bold shadow-lg shadow-violet-200">
                       <PlusCircleIcon className="w-5 h-5" />
                       Post Pet
                     </Link>
@@ -407,6 +445,7 @@ export const Header: React.FC<HeaderProps> = () => {
                   <button
                     onClick={() => {
                       setIsMobileMenuOpen(false);
+                      setIsWelcomeSelector(false);
                       setShowModeSwitcher(true);
                     }}
                     className="w-full flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-xl font-medium text-left"
@@ -441,89 +480,12 @@ export const Header: React.FC<HeaderProps> = () => {
         )}
       </div>
 
-      {/* Mode Switcher Modal */}
-      {showModeSwitcher && (
-        <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fadeIn">
-          <div className="mode-switcher-modal bg-white rounded-[2rem] shadow-2xl p-8 max-w-lg w-full transform transition-all relative overflow-hidden">
-            <button 
-              onClick={() => setShowModeSwitcher(false)}
-              className="absolute top-4 right-4 p-2 text-gray-400 hover:bg-gray-100 rounded-full transition-colors z-10"
-            >
-              <XMarkIcon className="w-6 h-6" />
-            </button>
-            <div className="text-center mb-8 relative z-10">
-              <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Choose Platform</h2>
-              <p className="text-gray-500 font-medium">Select how you want to use Peto today</p>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 relative z-10 w-full max-w-2xl mx-auto">
-              {!(location.pathname === '/' && (!location.search.includes('mode=') || location.search.includes('mode=sell'))) && (
-                <button 
-                  onClick={() => {
-                    navigate('/?mode=sell');
-                    setShowModeSwitcher(false);
-                  }}
-                  className="group relative bg-white border-2 border-violet-100 hover:border-violet-500 rounded-2xl p-6 text-left transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-violet-50 to-fuchsia-50 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
-                  <div className="relative">
-                    <div className="w-14 h-14 bg-violet-100 rounded-xl flex items-center justify-center mb-4 text-violet-600 group-hover:scale-110 transition-transform">
-                      <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                      </svg>
-                    </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-1 group-hover:text-violet-700 transition-colors">Marketplace</h3>
-                    <p className="text-sm text-gray-500">Buy, sell, or adopt your perfect companion.</p>
-                  </div>
-                </button>
-              )}
-              
-              {!(location.pathname === '/' && location.search.includes('mode=dating')) && (
-                <button 
-                  onClick={() => {
-                    navigate('/?mode=dating');
-                    setShowModeSwitcher(false);
-                  }}
-                  className="group relative bg-white border-2 border-rose-100 hover:border-rose-500 rounded-2xl p-6 text-left transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-rose-50 to-pink-50 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
-                  <div className="relative">
-                    <div className="w-14 h-14 bg-rose-100 rounded-xl flex items-center justify-center mb-4 text-rose-600 group-hover:scale-110 transition-transform">
-                      <HeartIcon className="w-7 h-7 text-rose-500" />
-                    </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-1 group-hover:text-rose-700 transition-colors">Pet Dating</h3>
-                    <p className="text-sm text-gray-500">Find playdates and mating partners.</p>
-                  </div>
-                </button>
-              )}
-
-              {!(location.pathname === '/vets') && (
-                <button 
-                  onClick={() => {
-                    navigate('/vets');
-                    setShowModeSwitcher(false);
-                  }}
-                  className="group relative bg-white border-2 border-emerald-100 hover:border-emerald-500 rounded-2xl p-6 text-left transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 to-teal-50 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
-                  <div className="relative">
-                    <div className="w-14 h-14 bg-emerald-100 rounded-xl flex items-center justify-center mb-4 text-emerald-600 group-hover:scale-110 transition-transform">
-                      <svg className="w-7 h-7 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-                      </svg>
-                    </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-1 group-hover:text-emerald-700 transition-colors">Find Vets</h3>
-                    <p className="text-sm text-gray-500">Locate trusted veterinarians near you.</p>
-                  </div>
-                </button>
-              )}
-            </div>
-            
-            {/* Decorative background elements */}
-            <div className="absolute -top-24 -left-24 w-48 h-48 bg-violet-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob" />
-            <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-rose-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000" />
-          </div>
-        </div>
-      )}
+      {/* Platform Selector Modal */}
+      <PlatformSelector
+        isOpen={showModeSwitcher}
+        onClose={() => { setShowModeSwitcher(false); setIsWelcomeSelector(false); }}
+        isWelcome={isWelcomeSelector}
+      />
     </header>
   );
 };
