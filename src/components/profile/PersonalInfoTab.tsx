@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { PencilIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { PencilIcon, CheckIcon, XMarkIcon, CheckCircleIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Card } from '../ui/Card';
 
 export const PersonalInfoTab: React.FC = () => {
-  const { user, updateProfile, isLoading } = useAuth(); // Destructure new function and isLoading
+  const { user, updateProfile, isLoading } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [updateError, setUpdateError] = useState('');
 
@@ -18,6 +18,11 @@ export const PersonalInfoTab: React.FC = () => {
     phone: user?.phone || '',
     bio: user?.bio || 'Edit your bio to share your passion for pets!',
   });
+
+  // Track whether user is changing a verified field
+  const isPhoneChanged = isEditing && formData.phone !== (user?.phone || '') && formData.phone !== '';
+  const phoneWasVerified = user?.mobileVerified || false;
+  const showPhoneWarning = isPhoneChanged && phoneWasVerified;
 
   // Synchronize local formData state whenever the global user context changes
   useEffect(() => {
@@ -121,6 +126,16 @@ export const PersonalInfoTab: React.FC = () => {
           </div>
         )}
 
+        {/* Phone change warning */}
+        {showPhoneWarning && (
+          <div className="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200 flex items-start space-x-2">
+            <ExclamationTriangleIcon className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-amber-800">
+              <strong>Warning:</strong> Changing your phone number will reset your mobile verification. You'll need to verify the new number again.
+            </p>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <Input
             label="Full Name"
@@ -129,12 +144,30 @@ export const PersonalInfoTab: React.FC = () => {
             disabled={!isEditing}
           />
 
-          <Input
-            label="Email Address (Read Only)"
-            type="email"
-            value={formData.email}
-            disabled={true} // Email should not be editable here
-          />
+          {/* Email with verification indicator */}
+          <div className="w-full">
+            <div className="flex items-center gap-2 mb-1">
+              <label className="block text-sm font-medium text-gray-700">
+                Email Address (Read Only)
+              </label>
+              {user.emailVerified ? (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700">
+                  <CheckCircleIcon className="w-3.5 h-3.5" />
+                  Verified
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-700">
+                  Unverified
+                </span>
+              )}
+            </div>
+            <input
+              type="email"
+              value={formData.email}
+              disabled={true}
+              className="block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
+            />
+          </div>
 
           <Input
             label="Location"
@@ -143,13 +176,34 @@ export const PersonalInfoTab: React.FC = () => {
             disabled={!isEditing}
           />
 
-          <Input
-            label="Phone Number"
-            value={formData.phone}
-            onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-            disabled={!isEditing}
-            placeholder="Enter your phone number"
-          />
+          {/* Phone with verification indicator */}
+          <div className="w-full">
+            <div className="flex items-center gap-2 mb-1">
+              <label className="block text-sm font-medium text-gray-700">
+                Phone Number
+              </label>
+              {user.phone ? (
+                user.mobileVerified ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700">
+                    <CheckCircleIcon className="w-3.5 h-3.5" />
+                    Verified
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-700">
+                    Unverified
+                  </span>
+                )
+              ) : null}
+            </div>
+            <input
+              type="text"
+              value={formData.phone}
+              onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+              disabled={!isEditing}
+              placeholder="Enter your phone number"
+              className="block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
+            />
+          </div>
         </div>
 
         <div className="mb-8">

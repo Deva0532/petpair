@@ -8,7 +8,7 @@ import dotenv from 'dotenv';
 import nodemailer from 'nodemailer';
 import XLSX from 'xlsx';
 import multer from 'multer';
-import twilio from 'twilio';
+import admin from 'firebase-admin';
 
 // Configure multer for file uploads (memory storage for Excel processing)
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
@@ -21,12 +21,18 @@ const JWT_SECRET = process.env.JWT_SECRET
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
-// --- TWILIO CLIENT ---
-let twilioClient;
-if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
-  twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+// --- FIREBASE ADMIN ---
+if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
+  admin.initializeApp({
+    credential: admin.credential.cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    }),
+  });
+  console.log('Firebase Admin initialized successfully.');
 } else {
-  console.warn('Twilio credentials missing. SMS functionality will not work, falling back to mock.');
+  console.warn('Firebase Admin credentials missing. Mobile OTP verification will not work.');
 }
 
 app.use(cors());
@@ -107,30 +113,54 @@ const isAdmin = (req, res, next) => {
   next();
 };
 
-// Helper to generate JWT token with all user fields
+// Helper to generate JWT token with essential auth fields only
+// NOTE: Full profile data is fetched via GET /api/profile, not stored in JWT
 const generateToken = (user) => {
   return jwt.sign({
     userId: user._id,
     email: user.email,
     name: user.name,
-    location: user.location,
-    phone: user.phone,
-    bio: user.bio,
-    avatar: user.avatar,
-    joinedAt: user.createdAt,
     userType: user.userType,
     isNewUser: user.isNewUser,
-    emailVerified: user.emailVerified,
-    mobileVerified: user.mobileVerified,
-    storeApproved: user.storeApproved,
-    storeRejected: user.storeRejected,
-    storeName: user.storeName,
-    storeDescription: user.storeDescription,
-    storeAddress: user.storeAddress,
     role: user.role,
-    isApproved: user.isApproved // Provide isApproved flag
+    isApproved: user.isApproved
   }, JWT_SECRET, { expiresIn: '7d' });
 };
+
+// GET /api/profile - Fetch full user profile from DB
+// Also returns a refreshed slim token to replace any old fat tokens
+app.get('/api/profile', protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId).select('-password -__v');
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    const token = generateToken(user);
+    res.json({
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      location: user.location,
+      phone: user.phone,
+      bio: user.bio,
+      avatar: user.avatar,
+      joinedAt: user.createdAt,
+      userType: user.userType,
+      isNewUser: user.isNewUser,
+      emailVerified: user.emailVerified,
+      mobileVerified: user.mobileVerified,
+      storeApproved: user.storeApproved,
+      storeRejected: user.storeRejected,
+      storeName: user.storeName,
+      storeDescription: user.storeDescription,
+      storeAddress: user.storeAddress,
+      role: user.role,
+      isApproved: user.isApproved,
+      token // Fresh slim token to replace old fat token
+    });
+  } catch (error) {
+    console.error('Get profile error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
 
 // --- GOOGLE AUTH ENDPOINT ---
 app.post('/api/auth/google', async (req, res) => {
@@ -280,9 +310,18 @@ app.put('/api/profile', protect, async (req, res) => {
     if (!user) return res.status(404).json({ message: 'User not found' });
     user.name = name ?? user.name;
     user.location = location ?? user.location;
-    user.phone = phone ?? user.phone;
     user.bio = bio ?? user.bio;
     if (avatar !== undefined) user.avatar = avatar;
+
+    // If phone number is changing and was previously verified, reset verification
+    if (phone !== undefined && phone !== user.phone) {
+      const wasVerified = user.mobileVerified;
+      user.phone = phone;
+      if (wasVerified && phone !== '') {
+        user.mobileVerified = false;
+      }
+    }
+
     const updatedUser = await user.save();
     const newToken = generateToken(updatedUser);
     res.json({ message: 'Profile updated successfully', token: newToken, avatar: updatedUser.avatar });
@@ -1105,9 +1144,15 @@ app.post('/api/auth/set-user-type', protect, async (req, res) => {
 });
 
 // --- PROFILE OTP VERIFICATION ---
+// Email OTP: sent via Nodemailer, verified via DB hash
 app.post('/api/auth/send-profile-otp', protect, async (req, res) => {
-  const { type, value } = req.body; // type: 'email' or 'mobile', value: email address or phone number
+  const { type, value } = req.body; // type: 'email' (mobile is now handled via Firebase on the client)
   if (!type || !value) return res.status(400).json({ message: 'Type and value are required' });
+
+  if (type === 'mobile') {
+    // Mobile OTP is now handled client-side via Firebase Phone Auth
+    return res.status(400).json({ message: 'Mobile verification is handled via Firebase. Use the client-side flow.' });
+  }
 
   try {
     const user = await User.findById(req.user.userId);
@@ -1117,63 +1162,42 @@ app.post('/api/auth/send-profile-otp', protect, async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const hashedOtp = await bcrypt.hash(otp, 10);
 
-    // Save OTP with identifier (email_verify_userid or mobile_verify_userid)
-    const identifier = `${type}_verify_${user._id}`;
+    // Save OTP with identifier (email_verify_userid)
+    const identifier = `email_verify_${user._id}`;
     await VerificationCode.findOneAndUpdate(
       { email: identifier },
       { code: hashedOtp, expiresAt: new Date(Date.now() + 10 * 60 * 1000) },
       { upsert: true }
     );
 
-    if (type === 'email') {
-      const mailOptions = {
-        from: process.env.EMAIL_USER,
-        to: value,
-        subject: 'Verify your email - Peto',
-        text: `Your verification code is: ${otp}. It expires in 10 minutes.`
-      };
-      await transporter.sendMail(mailOptions);
-      res.json({ message: 'Verification code sent to email' });
-    } else if (type === 'mobile') {
-      try {
-        let phoneValue = value;
-        if (!phoneValue.startsWith('+')) {
-          phoneValue = `+91${phoneValue}`;
-        }
-
-        if (!twilioClient) {
-          // Fallback to mock text if Twilio is not configured
-          console.log(`[MOCK SMS] OTP for ${phoneValue}: ${otp}`);
-          return res.json({ message: 'Verification code sent to mobile (mocked fallback)', otp: process.env.NODE_ENV === 'development' ? otp : undefined });
-        }
-
-        await twilioClient.messages.create({
-          body: `Your Peto verification code is: ${otp}`,
-          from: process.env.TWILIO_PHONE_NUMBER,
-          to: phoneValue
-        });
-
-        res.json({ message: 'Verification code sent to mobile', otp: process.env.NODE_ENV === 'development' ? otp : undefined });
-      } catch (smsError) {
-        console.error('Twilio SMS error:', smsError);
-        res.status(500).json({ message: 'Failed to send SMS OTP. Please check server configuration.' });
-      }
-    }
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: value,
+      subject: 'Verify your email - Peto',
+      text: `Your verification code is: ${otp}. It expires in 10 minutes.`
+    };
+    await transporter.sendMail(mailOptions);
+    res.json({ message: 'Verification code sent to email' });
   } catch (error) {
     console.error('Send profile OTP error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
 
+// Email OTP verification (DB-based)
 app.post('/api/auth/verify-profile-otp', protect, async (req, res) => {
-  const { type, otp } = req.body; // type: 'email' or 'mobile'
+  const { type, otp } = req.body; // type: 'email'
   if (!type || !otp) return res.status(400).json({ message: 'Type and OTP are required' });
+
+  if (type === 'mobile') {
+    return res.status(400).json({ message: 'Use /api/auth/verify-firebase-phone for mobile verification.' });
+  }
 
   try {
     const user = await User.findById(req.user.userId);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    const identifier = `${type}_verify_${user._id}`;
+    const identifier = `email_verify_${user._id}`;
     const verificationEntry = await VerificationCode.findOne({ email: identifier });
 
     if (!verificationEntry) {
@@ -1186,22 +1210,64 @@ app.post('/api/auth/verify-profile-otp', protect, async (req, res) => {
     const isMatch = await bcrypt.compare(otp, verificationEntry.code);
     if (!isMatch) return res.status(400).json({ message: 'Invalid verification code' });
 
-    // Update user verification status
-    if (type === 'email') {
-      user.emailVerified = true;
-    } else if (type === 'mobile') {
-      user.mobileVerified = true;
-    }
+    user.emailVerified = true;
     await user.save();
 
     // Delete OTP
     await VerificationCode.deleteOne({ email: identifier });
 
     const token = generateToken(user);
-    res.json({ message: `${type} verified successfully`, token });
+    res.json({ message: 'Email verified successfully', token });
   } catch (error) {
     console.error('Verify profile OTP error:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Mobile verification via Firebase Phone Auth
+app.post('/api/auth/verify-firebase-phone', protect, async (req, res) => {
+  const { idToken } = req.body;
+  if (!idToken) return res.status(400).json({ message: 'Firebase ID token is required' });
+
+  try {
+    // Verify the Firebase ID token
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    const firebasePhone = decodedToken.phone_number;
+
+    if (!firebasePhone) {
+      return res.status(400).json({ message: 'No phone number associated with this Firebase token' });
+    }
+
+    const user = await User.findById(req.user.userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Verify the phone number matches the user's phone
+    let userPhone = user.phone || '';
+    if (userPhone && !userPhone.startsWith('+')) {
+      userPhone = `+91${userPhone}`;
+    }
+
+    if (userPhone && userPhone !== firebasePhone) {
+      return res.status(400).json({ message: 'Phone number does not match your profile. Please update your profile phone number first.' });
+    }
+
+    user.mobileVerified = true;
+    await user.save();
+
+    // Clean up any old mobile OTP entries
+    await VerificationCode.deleteOne({ email: `mobile_verify_${user._id}` });
+
+    const token = generateToken(user);
+    res.json({ message: 'Mobile verified successfully', token });
+  } catch (error) {
+    console.error('Firebase phone verification error:', error);
+    if (error.code === 'auth/id-token-expired') {
+      return res.status(401).json({ message: 'Firebase token expired. Please try again.' });
+    }
+    if (error.code === 'auth/argument-error') {
+      return res.status(400).json({ message: 'Invalid Firebase token.' });
+    }
+    res.status(500).json({ message: 'Server error verifying phone number' });
   }
 });
 

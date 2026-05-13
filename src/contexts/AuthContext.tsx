@@ -34,9 +34,8 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-// Helper to decode JWT
-// Helper to decode JWT
-const decodeToken = (token: string): User | null => {
+// Helper to decode JWT (now only contains essential auth fields)
+const decodeToken = (token: string): { userId: string; email: string; name: string; userType: string; isNewUser: boolean; role: string; isApproved: boolean } | null => {
   try {
     const parts = token.split('.');
     if (parts.length !== 3) {
@@ -60,32 +59,61 @@ const decodeToken = (token: string): User | null => {
     console.log("Decoded Token Success:", { email: decodedPayload.email, role: decodedPayload.role });
 
     return {
-      id: decodedPayload.userId,
-      name: decodedPayload.name || 'User',
+      userId: decodedPayload.userId,
       email: decodedPayload.email,
-      location: decodedPayload.location || 'N/A',
-      phone: decodedPayload.phone || '',
-      bio: decodedPayload.bio || '',
-      avatar: decodedPayload.avatar,
-      joinedAt: decodedPayload.joinedAt,
-      // Map old user types to new ones for backward compatibility
+      name: decodedPayload.name || 'User',
       userType: (() => {
         const raw = decodedPayload.userType || 'normal';
         return raw === 'individual' ? 'normal' : raw === 'store' ? 'kennel' : raw;
       })(),
       isNewUser: decodedPayload.isNewUser ?? false,
-      emailVerified: decodedPayload.emailVerified || false,
-      mobileVerified: decodedPayload.mobileVerified || false,
-      storeApproved: decodedPayload.storeApproved || false,
-      storeRejected: decodedPayload.storeRejected || false,
-      storeName: decodedPayload.storeName || '',
-      storeDescription: decodedPayload.storeDescription || '',
-      storeAddress: decodedPayload.storeAddress || '',
       role: decodedPayload.role || 'user',
-      isApproved: decodedPayload.isApproved ?? decodedPayload.storeApproved ?? true,
+      isApproved: decodedPayload.isApproved ?? true,
     };
   } catch (e) {
     console.error("Failed to decode token:", e);
+    return null;
+  }
+};
+
+// Fetch full profile from GET /api/profile
+const fetchFullProfile = async (token: string): Promise<User | null> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/profile`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    // Save the fresh slim token to replace any old fat token
+    if (data.token) {
+      localStorage.setItem('token', data.token);
+    }
+    // Map userType for backward compatibility
+    const rawType = data.userType || 'normal';
+    const userType = rawType === 'individual' ? 'normal' : rawType === 'store' ? 'kennel' : rawType;
+    return {
+      id: data.id,
+      name: data.name || 'User',
+      email: data.email,
+      location: data.location || 'N/A',
+      phone: data.phone || '',
+      bio: data.bio || '',
+      avatar: data.avatar,
+      joinedAt: data.joinedAt,
+      userType,
+      isNewUser: data.isNewUser ?? false,
+      emailVerified: data.emailVerified || false,
+      mobileVerified: data.mobileVerified || false,
+      storeApproved: data.storeApproved || false,
+      storeRejected: data.storeRejected || false,
+      storeName: data.storeName || '',
+      storeDescription: data.storeDescription || '',
+      storeAddress: data.storeAddress || '',
+      role: data.role || 'user',
+      isApproved: data.isApproved ?? data.storeApproved ?? true,
+    };
+  } catch (e) {
+    console.error('Failed to fetch profile:', e);
     return null;
   }
 };
@@ -103,10 +131,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const token = localStorage.getItem('token');
     console.log('Initial token check:', token ? 'Token exists' : 'No token');
     if (token) {
-      const decodedUser = decodeToken(token);
-      if (decodedUser) {
-        console.log('Setting user from token:', decodedUser.email);
-        setUser(decodedUser);
+      const decoded = decodeToken(token);
+      if (decoded) {
+        // Set basic user info immediately from JWT for fast render
+        setUser({
+          id: decoded.userId,
+          name: decoded.name,
+          email: decoded.email,
+          location: '',
+          userType: decoded.userType as User['userType'],
+          isNewUser: decoded.isNewUser,
+          role: decoded.role as User['role'],
+          isApproved: decoded.isApproved,
+        });
+        // Then fetch full profile from API
+        fetchFullProfile(token).then(fullUser => {
+          if (fullUser) {
+            setUser(fullUser);
+          }
+        });
       } else {
         console.log('Token decode failed, removing token');
         localStorage.removeItem('token');
@@ -149,8 +192,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const data = await response.json();
       if (response.ok) {
         localStorage.setItem('token', data.token);
-        const decodedUser = decodeToken(data.token);
-        setUser(decodedUser);
+        const fullUser = await fetchFullProfile(data.token);
+        setUser(fullUser);
         return true;
       } else {
         setUser(null);
@@ -177,8 +220,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const data = await response.json();
       if (response.ok) {
         localStorage.setItem('token', data.token);
-        const decodedUser = decodeToken(data.token);
-        setUser(decodedUser);
+        const fullUser = await fetchFullProfile(data.token);
+        setUser(fullUser);
         return true;
       } else {
         setUser(null);
@@ -206,9 +249,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const data = await response.json();
       if (response.ok) {
         localStorage.setItem('token', data.token);
-        const decodedUser = decodeToken(data.token);
-        setUser(decodedUser);
-        return { success: true, isNewUser: decodedUser?.isNewUser };
+        const fullUser = await fetchFullProfile(data.token);
+        setUser(fullUser);
+        return { success: true, isNewUser: fullUser?.isNewUser };
       } else {
         console.error('Google login failed:', data.message);
         setUser(null);
@@ -228,7 +271,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsLoading(true);
     try {
       await updateUserProfile(user.id, profileData);
-      setUser(prev => prev ? { ...prev, ...profileData } : null);
+      // Refresh full profile from API after update
+      const token = localStorage.getItem('token');
+      if (token) {
+        const fullUser = await fetchFullProfile(token);
+        if (fullUser) {
+          setUser(fullUser);
+        }
+      } else {
+        setUser(prev => prev ? { ...prev, ...profileData } : null);
+      }
       return true;
     } catch (err) {
       console.error('Error updating profile:', err);
@@ -244,14 +296,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setUser(null);
   };
 
-  // Refresh token from localStorage
+  // Refresh profile from API
   const refreshToken = () => {
     const token = localStorage.getItem('token');
     if (token) {
-      const decodedUser = decodeToken(token);
-      if (decodedUser) {
-        setUser(decodedUser);
-      }
+      fetchFullProfile(token).then(fullUser => {
+        if (fullUser) {
+          setUser(fullUser);
+        }
+      });
     }
   };
 

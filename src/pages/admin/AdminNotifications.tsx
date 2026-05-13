@@ -8,7 +8,7 @@ interface User {
     _id: string;
     name: string;
     email: string;
-    userType: 'individual' | 'store';
+    userType: 'individual' | 'store' | 'kennel';
     storeName?: string;
     avatar?: string;
 }

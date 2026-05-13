@@ -208,6 +208,8 @@ export const Home: React.FC = () => {
     if (pet.status === 'sold') return false;
     // If logged in, filter out own pets
     if (user && pet.owner && (pet.owner.id === user.id || (pet.owner as any)._id === user.id)) return false;
+    // Filter out admin pets from the marketplace
+    if (pet.owner && (pet.owner.role === 'admin' || (pet.owner as any).role === 'admin')) return false;
     return true;
   });
 

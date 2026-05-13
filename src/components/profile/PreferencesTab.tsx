@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   BellIcon,
@@ -15,6 +15,8 @@ import { Card } from '../ui/Card';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { getUserPreferences, updateUserPreferences } from '../../services/userService';
+import { auth } from '../../firebase';
+import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from 'firebase/auth';
 
 export const PreferencesTab: React.FC = () => {
   const { user, logout, refreshToken } = useAuth();
@@ -33,6 +35,11 @@ export const PreferencesTab: React.FC = () => {
   const [sendingOtp, setSendingOtp] = useState(false);
   const [verifyingOtp, setVerifyingOtp] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
+
+  // Firebase Phone Auth state
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+  const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
+  const recaptchaContainerRef = useRef<HTMLDivElement | null>(null);
 
   const [preferences, setPreferences] = useState({
     emailNotifications: true,
@@ -155,40 +162,87 @@ export const PreferencesTab: React.FC = () => {
     setVerificationType(type);
     setVerificationOtp('');
     setOtpSent(false);
+    setConfirmationResult(null);
     setShowVerificationModal(true);
+  };
+
+  // Cleanup reCAPTCHA when modal closes
+  const cleanupRecaptcha = () => {
+    if (recaptchaVerifierRef.current) {
+      recaptchaVerifierRef.current.clear();
+      recaptchaVerifierRef.current = null;
+    }
   };
 
   const handleSendVerificationOtp = async () => {
     setSendingOtp(true);
     try {
-      const token = localStorage.getItem('token');
-      const value = verificationType === 'email' ? user?.email : user?.phone;
+      if (verificationType === 'email') {
+        // Email: use backend OTP flow
+        const token = localStorage.getItem('token');
+        const value = user?.email;
 
-      if (!value) {
-        showToast(`Please add your ${verificationType} first`, 'error');
-        setSendingOtp(false);
-        return;
-      }
+        if (!value) {
+          showToast('Please add your email first', 'error');
+          setSendingOtp(false);
+          return;
+        }
 
-      const response = await fetch('http://localhost:5000/api/auth/send-profile-otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ type: verificationType, value })
-      });
+        const response = await fetch('http://localhost:5000/api/auth/send-profile-otp', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ type: 'email', value })
+        });
 
-      const data = await response.json();
-      if (response.ok) {
-        setOtpSent(true);
-        showToast(`Verification code sent to your ${verificationType}`, 'success');
+        const data = await response.json();
+        if (response.ok) {
+          setOtpSent(true);
+          showToast('Verification code sent to your email', 'success');
+        } else {
+          showToast(data.message || 'Failed to send verification code', 'error');
+        }
       } else {
-        showToast(data.message || 'Failed to send verification code', 'error');
+        // Mobile: use Firebase Phone Auth
+        const phoneValue = user?.phone;
+        if (!phoneValue) {
+          showToast('Please add your phone number first', 'error');
+          setSendingOtp(false);
+          return;
+        }
+
+        const formattedPhone = phoneValue.startsWith('+') ? phoneValue : `+91${phoneValue}`;
+
+        // Setup invisible reCAPTCHA
+        cleanupRecaptcha();
+        const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+          size: 'invisible',
+          callback: () => {
+            // reCAPTCHA solved
+          },
+          'expired-callback': () => {
+            showToast('reCAPTCHA expired. Please try again.', 'error');
+          }
+        });
+        recaptchaVerifierRef.current = verifier;
+
+        const result = await signInWithPhoneNumber(auth, formattedPhone, verifier);
+        setConfirmationResult(result);
+        setOtpSent(true);
+        showToast('OTP sent to your phone via SMS', 'success');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Send OTP error:', error);
-      showToast('Failed to send verification code', 'error');
+      if (error?.code === 'auth/invalid-phone-number') {
+        showToast('Invalid phone number format. Please update your profile.', 'error');
+      } else if (error?.code === 'auth/too-many-requests') {
+        showToast('Too many attempts. Please try again later.', 'error');
+      } else {
+        showToast('Failed to send verification code', 'error');
+      }
+      cleanupRecaptcha();
     } finally {
       setSendingOtp(false);
     }
@@ -202,31 +256,75 @@ export const PreferencesTab: React.FC = () => {
 
     setVerifyingOtp(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/auth/verify-profile-otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ type: verificationType, otp: verificationOtp })
-      });
+      if (verificationType === 'email') {
+        // Email: verify via backend
+        const token = localStorage.getItem('token');
+        const response = await fetch('http://localhost:5000/api/auth/verify-profile-otp', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ type: 'email', otp: verificationOtp })
+        });
 
-      const data = await response.json();
-      if (response.ok) {
-        // Update token to reflect new verification status
-        if (data.token) {
-          localStorage.setItem('token', data.token);
-          refreshToken();
+        const data = await response.json();
+        if (response.ok) {
+          if (data.token) {
+            localStorage.setItem('token', data.token);
+            refreshToken();
+          }
+          showToast('Email verified successfully!', 'success');
+          setShowVerificationModal(false);
+          cleanupRecaptcha();
+        } else {
+          showToast(data.message || 'Invalid verification code', 'error');
         }
-        showToast(`${verificationType === 'email' ? 'Email' : 'Mobile'} verified successfully!`, 'success');
-        setShowVerificationModal(false);
       } else {
-        showToast(data.message || 'Invalid verification code', 'error');
+        // Mobile: verify via Firebase, then send token to backend
+        if (!confirmationResult) {
+          showToast('Session expired. Please resend OTP.', 'error');
+          setVerifyingOtp(false);
+          return;
+        }
+
+        const credential = await confirmationResult.confirm(verificationOtp);
+        const firebaseUser = credential.user;
+        const idToken = await firebaseUser.getIdToken();
+
+        // Send Firebase ID token to backend to update mobileVerified
+        const token = localStorage.getItem('token');
+        const response = await fetch('http://localhost:5000/api/auth/verify-firebase-phone', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ idToken })
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+          if (data.token) {
+            localStorage.setItem('token', data.token);
+            refreshToken();
+          }
+          showToast('Mobile verified successfully!', 'success');
+          setShowVerificationModal(false);
+          cleanupRecaptcha();
+        } else {
+          showToast(data.message || 'Failed to verify phone number', 'error');
+        }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Verify OTP error:', error);
-      showToast('Failed to verify code', 'error');
+      if (error?.code === 'auth/invalid-verification-code') {
+        showToast('Invalid OTP. Please check and try again.', 'error');
+      } else if (error?.code === 'auth/code-expired') {
+        showToast('OTP has expired. Please resend.', 'error');
+      } else {
+        showToast('Failed to verify code', 'error');
+      }
     } finally {
       setVerifyingOtp(false);
     }
@@ -654,7 +752,7 @@ export const PreferencesTab: React.FC = () => {
               </h3>
               <p className="text-gray-500 mt-2">
                 {otpSent
-                  ? `Enter the 6-digit code sent to your ${verificationType}`
+                  ? `Enter the 6-digit code sent to your ${verificationType === 'email' ? 'email' : 'phone via SMS'}`
                   : `We'll send a verification code to ${verificationType === 'email' ? user?.email : user?.phone}`
                 }
               </p>
@@ -681,7 +779,10 @@ export const PreferencesTab: React.FC = () => {
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => setShowVerificationModal(false)}
+                  onClick={() => {
+                    setShowVerificationModal(false);
+                    cleanupRecaptcha();
+                  }}
                   className="w-full"
                 >
                   Cancel
@@ -709,6 +810,8 @@ export const PreferencesTab: React.FC = () => {
                       setShowVerificationModal(false);
                       setOtpSent(false);
                       setVerificationOtp('');
+                      setConfirmationResult(null);
+                      cleanupRecaptcha();
                     }}
                     className="flex-1"
                     disabled={verifyingOtp}
@@ -735,6 +838,9 @@ export const PreferencesTab: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Invisible reCAPTCHA container for Firebase Phone Auth */}
+      <div id="recaptcha-container" ref={recaptchaContainerRef}></div>
     </div>
   );
 };

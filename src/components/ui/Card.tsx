@@ -6,16 +6,19 @@ interface CardProps {
   className?: string;
   hover?: boolean;
   onClick?: () => void;
+  id?: string;
 }
 
 export const Card: React.FC<CardProps> = ({ 
   children, 
   className, 
   hover = false,
-  onClick 
+  onClick,
+  id 
 }) => {
   return (
     <div
+      id={id}
       className={clsx(
         'bg-white rounded-xl shadow-sm border border-gray-200',
         hover && 'hover:shadow-md transition-shadow duration-200 cursor-pointer',
