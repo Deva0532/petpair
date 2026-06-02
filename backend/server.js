@@ -39,6 +39,11 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
+// Root route for health checks and wake-up pings
+app.get('/', (req, res) => {
+  res.status(200).send('Peto API is running successfully.');
+});
+
 const MONGODB_URI = process.env.MONGODB_URI;
 mongoose.connect(MONGODB_URI)
   .then(() => console.log('Connected to MongoDB'))
