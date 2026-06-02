@@ -5,7 +5,7 @@ import { Modal } from '../components/ui/Modal';
 import { Button } from '../components/ui/Button';
 import { Veterinarian } from '../types';
 
-const API_BASE_URL = 'http://localhost:5000';
+import { API_BASE_URL } from '../config';
 
 export const Vets: React.FC = () => {
   const [selectedSpecialty, setSelectedSpecialty] = useState('all');

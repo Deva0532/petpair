@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { BuildingStorefrontIcon, MapPinIcon, PhoneIcon, EnvelopeIcon, CheckBadgeIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 
-const API_BASE_URL = 'http://localhost:5000';
+import { API_BASE_URL } from '../config';
 
 interface Store {
     _id: string;

@@ -1,4 +1,6 @@
-const API_BASE_URL = 'http://localhost:5000/api';
+import { API_BASE_URL } from '../config';
+
+const API_URL = `${API_BASE_URL}/api`;
 
 export const fetchWithAuth = async (endpoint: string, options: RequestInit = {}): Promise<Response> => {
     const token = localStorage.getItem('token');
@@ -15,7 +17,7 @@ export const fetchWithAuth = async (endpoint: string, options: RequestInit = {})
     };
 
     // Handle full URLs vs relative endpoints
-    const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
+    const url = endpoint.startsWith('http') ? endpoint : `${API_URL}${endpoint}`;
 
     try {
         const response = await fetch(url, config);

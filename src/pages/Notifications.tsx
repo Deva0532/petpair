@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Card } from '../components/ui/Card';
 import { BellIcon, CheckCircleIcon, ChevronDownIcon, ChevronUpIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { API_BASE_URL } from '../config';
 
 interface NotificationItem {
   _id: string;
@@ -43,7 +44,7 @@ export const Notifications: React.FC = () => {
     if (!user) return;
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/notifications', {
+      const response = await fetch(`${API_BASE_URL}/api/notifications`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
@@ -63,7 +64,7 @@ export const Notifications: React.FC = () => {
       const unreadIds = notifications.filter(n => !n.read).map(n => n._id);
       
       for (const id of unreadIds) {
-        await fetch(`http://localhost:5000/api/notifications/${id}/read`, {
+        await fetch(`${API_BASE_URL}/api/notifications/${id}/read`, {
           method: 'PUT',
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -78,7 +79,7 @@ export const Notifications: React.FC = () => {
   const markAsRead = async (id: string) => {
     try {
       const token = localStorage.getItem('token');
-      await fetch(`http://localhost:5000/api/notifications/${id}/read`, {
+      await fetch(`${API_BASE_URL}/api/notifications/${id}/read`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -92,7 +93,7 @@ export const Notifications: React.FC = () => {
     e.stopPropagation();
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/notifications/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/notifications/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -108,7 +109,7 @@ export const Notifications: React.FC = () => {
   const clearAllNotifications = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/notifications`, {
+      const response = await fetch(`${API_BASE_URL}/api/notifications`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });

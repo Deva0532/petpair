@@ -4,6 +4,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { ChatBubbleLeftRightIcon, CheckCircleIcon, ClockIcon } from '@heroicons/react/24/outline';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
+import { API_BASE_URL } from '../../config';
 
 interface FeedbackItem {
   _id: string;
@@ -28,7 +29,7 @@ export const FeedbackTab: React.FC = () => {
     const fetchFeedbacks = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('http://localhost:5000/api/feedback/me', {
+            const res = await fetch(`${API_BASE_URL}/api/feedback/me`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -58,7 +59,7 @@ export const FeedbackTab: React.FC = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const res = await fetch('http://localhost:5000/api/feedback', {
+            const res = await fetch(`${API_BASE_URL}/api/feedback`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

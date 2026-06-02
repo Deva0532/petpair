@@ -6,7 +6,7 @@ import { Button } from '../../components/ui/Button';
 import { StarRating } from '../../components/ui/StarRating';
 import { useToast } from '../../contexts/ToastContext';
 
-const API_BASE_URL = 'http://localhost:5000';
+import { API_BASE_URL } from '../../config';
 
 interface ReportedReview {
     _id: string;

@@ -4,7 +4,7 @@ import { UserIcon, CheckCircleIcon, ArrowRightIcon, ShieldCheckIcon } from '@her
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/Button';
 
-const API_BASE_URL = 'http://localhost:5000';
+import { API_BASE_URL } from '../config';
 
 export const UserTypeSelection: React.FC = () => {
     const [selectedType, setSelectedType] = useState<'normal' | 'kennel' | null>(null);

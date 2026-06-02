@@ -20,6 +20,7 @@ import { AdminVets } from './AdminVets';
 import { AdminReportedReviews } from './AdminReportedReviews';
 import { AdminFeedbacks } from './AdminFeedbacks';
 import { ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
+import { API_BASE_URL } from '../../config';
 
 interface NotificationItem {
     _id: string;
@@ -56,7 +57,7 @@ export const AdminLayout: React.FC = () => {
             if (user && isAdmin) {
                 try {
                     const token = localStorage.getItem('token');
-                    const response = await fetch('http://localhost:5000/api/notifications', {
+                    const response = await fetch(`${API_BASE_URL}/api/notifications`, {
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
                     if (response.ok) {
@@ -80,7 +81,7 @@ export const AdminLayout: React.FC = () => {
     const markAsRead = async (notificationId: string) => {
         try {
             const token = localStorage.getItem('token');
-            await fetch(`http://localhost:5000/api/notifications/${notificationId}/read`, {
+            await fetch(`${API_BASE_URL}/api/notifications/${notificationId}/read`, {
                 method: 'PUT',
                 headers: { 'Authorization': `Bearer ${token}` }
             });

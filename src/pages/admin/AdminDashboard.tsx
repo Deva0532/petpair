@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { UsersIcon, HeartIcon, BuildingStorefrontIcon, ClockIcon } from '@heroicons/react/24/outline';
 
-const API_BASE_URL = 'http://localhost:5000';
+import { API_BASE_URL } from '../../config';
 
 interface Stats {
     totalUsers: number;

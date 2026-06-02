@@ -4,6 +4,7 @@ import { Pet } from '../types';
 import { getPets } from '../services/petService';
 import { useToast } from '../contexts/ToastContext';
 import { PetCard } from '../components/pets/PetCard';
+import { API_BASE_URL } from '../config';
 import { MapPinIcon, ShieldCheckIcon, CalendarIcon, ArrowLeftIcon, StarIcon, CheckBadgeIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
 
@@ -23,7 +24,7 @@ export const PublicProfile: React.FC = () => {
             try {
                 let userStats = { rating: 0, reviewCount: 0, successfulSales: 0 };
                 try {
-                    const statsRes = await fetch(`http://localhost:5000/api/users/${id}/stats`);
+                    const statsRes = await fetch(`${API_BASE_URL}/api/users/${id}/stats`);
                     if (statsRes.ok) {
                         userStats = await statsRes.json();
                     }
@@ -49,7 +50,7 @@ export const PublicProfile: React.FC = () => {
                     });
                 } else {
                     try {
-                        const userRes = await fetch(`http://localhost:5000/api/users/${id}`);
+                        const userRes = await fetch(`${API_BASE_URL}/api/users/${id}`);
                         if (userRes.ok) {
                             const userData = await userRes.json();
                             setSeller({

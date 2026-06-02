@@ -1,4 +1,5 @@
 import { User } from '../types';
+import { API_BASE_URL } from '../config';
 
 // Helper to get token
 const getAuthHeader = () => {
@@ -19,7 +20,7 @@ export const updateUserProfile = async (userId: string, data: Partial<User>): Pr
     if (!headers) throw new Error('Not authenticated');
 
     try {
-        const response = await fetch('http://localhost:5000/api/profile', {
+        const response = await fetch(`${API_BASE_URL}/api/profile`, {
             method: 'PUT',
             headers,
             body: JSON.stringify(data)
@@ -48,7 +49,7 @@ export const getUserPreferences = async (userId: string): Promise<any> => {
     if (!headers) return null;
 
     try {
-        const response = await fetch('http://localhost:5000/api/preferences', {
+        const response = await fetch(`${API_BASE_URL}/api/preferences`, {
             headers
         });
         if (response.ok) {
@@ -66,7 +67,7 @@ export const updateUserPreferences = async (userId: string, data: any): Promise<
     if (!headers) throw new Error('Not authenticated');
 
     try {
-        const response = await fetch('http://localhost:5000/api/preferences', {
+        const response = await fetch(`${API_BASE_URL}/api/preferences`, {
             method: 'PUT',
             headers,
             body: JSON.stringify(data)

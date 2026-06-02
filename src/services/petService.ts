@@ -39,7 +39,9 @@ export interface PetData {
     status?: 'active' | 'sold' | 'deleted';
 }
 
-const API_BASE = 'http://localhost:5000/api';
+import { API_BASE_URL } from '../config';
+
+const API_BASE = `${API_BASE_URL}/api`;
 
 const DEFAULT_PET_IMAGE = 'https://placehold.co/600x400/e2e8f0/64748b?text=No+Image';
 

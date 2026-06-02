@@ -27,6 +27,7 @@ import { Card } from '../components/ui/Card';
 import { useAuth } from '../contexts/AuthContext';
 import { addToWishlist, removeFromWishlist, getWishlist } from '../services/petService';
 import { useToast } from '../contexts/ToastContext';
+import { API_BASE_URL } from '../config';
 
 const petTypeEmojis: Record<string, string> = {
     dog: '🐕', cat: '🐈', bird: '🐦', fish: '🐠', reptile: '🦎', other: '🐾',
@@ -65,7 +66,7 @@ export const PetDetails: React.FC = () => {
             if (!id) return;
             try {
                 setLoading(true);
-                const response = await fetch(`http://localhost:5000/api/pets/${id}`);
+                const response = await fetch(`${API_BASE_URL}/api/pets/${id}`);
                 if (response.ok) {
                     const data = await response.json();
                     const transformedPet: Pet = {
@@ -118,7 +119,7 @@ export const PetDetails: React.FC = () => {
             if (!id) return;
             try {
                 setReviewsLoading(true);
-                const response = await fetch(`http://localhost:5000/api/pets/${id}/reviews`);
+                const response = await fetch(`${API_BASE_URL}/api/pets/${id}/reviews`);
                 if (response.ok) {
                     const data = await response.json();
                     setReviews(data);
@@ -233,7 +234,7 @@ export const PetDetails: React.FC = () => {
         try {
             setSubmittingReview(true);
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/pets/${id}/reviews`, {
+            const response = await fetch(`${API_BASE_URL}/api/pets/${id}/reviews`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify(newReview)
@@ -271,7 +272,7 @@ export const PetDetails: React.FC = () => {
         if (!editReviewData.comment.trim()) { showToast('Please write a comment', 'error'); return; }
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/pets/${id}/reviews/${editingReview._id}`, {
+            const response = await fetch(`${API_BASE_URL}/api/pets/${id}/reviews/${editingReview._id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify(editReviewData)
@@ -306,7 +307,7 @@ export const PetDetails: React.FC = () => {
         try {
             const token = localStorage.getItem('token');
             const finalReason = reportReason === 'Other' ? customReason : reportReason;
-            const response = await fetch(`http://localhost:5000/api/reviews/${reportingReview}/report`, {
+            const response = await fetch(`${API_BASE_URL}/api/reviews/${reportingReview}/report`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ reason: finalReason })

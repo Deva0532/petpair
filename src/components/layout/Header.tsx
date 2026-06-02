@@ -13,6 +13,7 @@ import { Button } from '../ui/Button';
 import { useAuth } from '../../contexts/AuthContext.tsx';
 import { getWishlist } from '../../services/petService';
 import { PlatformSelector } from './PlatformSelector';
+import { API_BASE_URL } from '../../config';
 
 interface Notification {
   _id: string;
@@ -118,7 +119,7 @@ export const Header: React.FC<HeaderProps> = () => {
       if (user) {
         try {
           const token = localStorage.getItem('token');
-          const response = await fetch('http://localhost:5000/api/notifications', {
+          const response = await fetch(`${API_BASE_URL}/api/notifications`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           if (response.ok) {
@@ -141,7 +142,7 @@ export const Header: React.FC<HeaderProps> = () => {
   const markAsRead = async (notificationId: string) => {
     try {
       const token = localStorage.getItem('token');
-      await fetch(`http://localhost:5000/api/notifications/${notificationId}/read`, {
+      await fetch(`${API_BASE_URL}/api/notifications/${notificationId}/read`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${token}` }
       });

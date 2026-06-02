@@ -5,6 +5,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { StarRating } from '../ui/StarRating';
 
+import { API_BASE_URL } from '../../config';
+
 interface UserStats {
   petsListed: number;
   successfulSales: number;
@@ -34,7 +36,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ onPhotoChange }) =
     const fetchStats = async () => {
       if (!user?.id) return;
       try {
-        const response = await fetch(`http://localhost:5000/api/users/${user.id}/stats`);
+        const response = await fetch(`${API_BASE_URL}/api/users/${user.id}/stats`);
         if (response.ok) {
           const data = await response.json();
           setStats(data);

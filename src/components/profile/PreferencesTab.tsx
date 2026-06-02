@@ -17,6 +17,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { getUserPreferences, updateUserPreferences } from '../../services/userService';
 import { auth } from '../../firebase';
 import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from 'firebase/auth';
+import { API_BASE_URL } from '../../config';
 
 export const PreferencesTab: React.FC = () => {
   const { user, logout, refreshToken } = useAuth();
@@ -104,7 +105,7 @@ export const PreferencesTab: React.FC = () => {
     // Call API to change password
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/auth/change-password', {
+      const response = await fetch(`${API_BASE_URL}/api/auth/change-password`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -134,7 +135,7 @@ export const PreferencesTab: React.FC = () => {
   const handleDeleteAccount = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/auth/delete-account', {
+      const response = await fetch(`${API_BASE_URL}/api/auth/delete-account`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -188,7 +189,7 @@ export const PreferencesTab: React.FC = () => {
           return;
         }
 
-        const response = await fetch('http://localhost:5000/api/auth/send-profile-otp', {
+        const response = await fetch(`${API_BASE_URL}/api/auth/send-profile-otp`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -259,7 +260,7 @@ export const PreferencesTab: React.FC = () => {
       if (verificationType === 'email') {
         // Email: verify via backend
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:5000/api/auth/verify-profile-otp', {
+        const response = await fetch(`${API_BASE_URL}/api/auth/verify-profile-otp`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -294,7 +295,7 @@ export const PreferencesTab: React.FC = () => {
 
         // Send Firebase ID token to backend to update mobileVerified
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:5000/api/auth/verify-firebase-phone', {
+        const response = await fetch(`${API_BASE_URL}/api/auth/verify-firebase-phone`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -643,7 +644,7 @@ export const PreferencesTab: React.FC = () => {
                   className="w-full border-blue-200 text-blue-700 hover:bg-blue-100"
                   onClick={async () => {
                     try {
-                      const response = await fetch('http://localhost:5000/api/auth/forgot-password', {
+                      const response = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ email: user?.email }),

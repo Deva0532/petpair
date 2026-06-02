@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { CheckCircleIcon, XCircleIcon, BuildingStorefrontIcon, MapPinIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
 import { useToast } from '../../contexts/ToastContext';
 
-const API_BASE_URL = 'http://localhost:5000';
+import { API_BASE_URL } from '../../config';
 
 interface PendingStore {
     _id: string;

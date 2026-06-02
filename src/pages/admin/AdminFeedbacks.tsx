@@ -4,7 +4,7 @@ import { ChatBubbleLeftRightIcon, CheckCircleIcon, ClockIcon } from '@heroicons/
 import { Button } from '../../components/ui/Button';
 import { useToast } from '../../contexts/ToastContext';
 
-const API_BASE_URL = 'http://localhost:5000';
+import { API_BASE_URL } from '../../config';
 
 interface UserInfo {
     _id: string;

@@ -4,6 +4,7 @@ import { EyeIcon, EyeSlashIcon, EnvelopeIcon, LockClosedIcon, UserIcon, MapPinIc
 import { GoogleLogin } from '@react-oauth/google';
 import { Button } from '../components/ui/Button';
 import { useAuth } from '../contexts/AuthContext';
+import { API_BASE_URL } from '../config';
 
 export const Signup: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -53,7 +54,7 @@ export const Signup: React.FC = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/send-verification-otp', {
+      const response = await fetch(`${API_BASE_URL}/api/auth/send-verification-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: formData.email }),
