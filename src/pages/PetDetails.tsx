@@ -507,21 +507,21 @@ export const PetDetails: React.FC = () => {
                             </div>
 
                             {/* Quick Stats */}
-                            <div className="grid grid-cols-3 gap-2.5">
-                                <div className="bg-gradient-to-br from-violet-50 to-purple-50 rounded-2xl p-3.5 text-center border border-violet-100/50">
+                            <div className="grid grid-cols-3 gap-1.5 sm:gap-2.5">
+                                <div className="bg-gradient-to-br from-violet-50 to-purple-50 rounded-2xl p-2 sm:p-3.5 text-center border border-violet-100/50 min-w-0">
                                     <CakeIcon className="w-5 h-5 text-violet-500 mx-auto mb-1.5" />
-                                    <div className="text-lg font-extrabold text-slate-900">{pet.age}</div>
-                                    <div className="text-[0.65rem] text-slate-500 font-semibold uppercase tracking-wider">Years</div>
+                                    <div className="text-base sm:text-lg font-extrabold text-slate-900 truncate" title={String(pet.age)}>{pet.age}</div>
+                                    <div className="text-[0.6rem] sm:text-[0.65rem] text-slate-500 font-semibold uppercase tracking-wider">Years</div>
                                 </div>
-                                <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-3.5 text-center border border-blue-100/50">
+                                <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-2 sm:p-3.5 text-center border border-blue-100/50 min-w-0">
                                     <HomeIcon className="w-5 h-5 text-blue-500 mx-auto mb-1.5" />
-                                    <div className="text-lg font-extrabold text-slate-900 capitalize">{displayType}</div>
-                                    <div className="text-[0.65rem] text-slate-500 font-semibold uppercase tracking-wider">Type</div>
+                                    <div className="text-base sm:text-lg font-extrabold text-slate-900 capitalize truncate" title={displayType}>{displayType}</div>
+                                    <div className="text-[0.6rem] sm:text-[0.65rem] text-slate-500 font-semibold uppercase tracking-wider">Type</div>
                                 </div>
-                                <div className="bg-gradient-to-br from-rose-50 to-pink-50 rounded-2xl p-3.5 text-center border border-rose-100/50">
+                                <div className="bg-gradient-to-br from-rose-50 to-pink-50 rounded-2xl p-2 sm:p-3.5 text-center border border-rose-100/50 min-w-0">
                                     <UserIcon className="w-5 h-5 text-rose-500 mx-auto mb-1.5" />
-                                    <div className="text-lg font-extrabold text-slate-900 capitalize">{pet.gender || 'N/A'}</div>
-                                    <div className="text-[0.65rem] text-slate-500 font-semibold uppercase tracking-wider">Gender</div>
+                                    <div className="text-base sm:text-lg font-extrabold text-slate-900 capitalize truncate" title={pet.gender || 'N/A'}>{pet.gender || 'N/A'}</div>
+                                    <div className="text-[0.6rem] sm:text-[0.65rem] text-slate-500 font-semibold uppercase tracking-wider">Gender</div>
                                 </div>
                             </div>
 
@@ -592,7 +592,7 @@ export const PetDetails: React.FC = () => {
             {/* Tabs Section */}
             <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
                 {/* Tab Navigation */}
-                <div className="flex gap-1.5 p-1.5 bg-white rounded-2xl border border-slate-100 shadow-sm mb-8 max-w-fit">
+                <div className="flex gap-1.5 p-1.5 bg-white rounded-2xl border border-slate-100 shadow-sm mb-8 max-w-full overflow-x-auto scrollbar-hide whitespace-nowrap">
                     {[
                         { key: 'overview', label: 'Overview', icon: '📋' },
                         { key: 'health', label: 'Health', icon: '🏥' },
@@ -602,7 +602,7 @@ export const PetDetails: React.FC = () => {
                         <button
                             key={tab.key}
                             onClick={() => setActiveTab(tab.key as any)}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${
+                            className={`flex-shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${
                                 activeTab === tab.key
                                     ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-200/50'
                                     : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'

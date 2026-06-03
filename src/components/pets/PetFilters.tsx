@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FunnelIcon, XMarkIcon, ChevronDownIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 
 interface FilterOptions {

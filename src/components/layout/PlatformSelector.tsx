@@ -99,11 +99,11 @@ export const PlatformSelector: React.FC<PlatformSelectorProps> = ({ isOpen, onCl
           </div>
 
           {/* Horizontal 3-column card row */}
-          <div className="flex flex-col sm:flex-row justify-center items-center sm:items-stretch gap-3 relative z-10 w-full">
+          <div className="flex flex-col md:flex-row justify-center items-center md:items-stretch gap-3 relative z-10 w-full">
             {/* Marketplace */}
             <button
               onClick={() => { navigate('/?mode=sell'); onClose(); }}
-              className="group flex-1 max-w-[280px] sm:max-w-none w-full flex flex-col items-center text-center p-4 bg-gray-50/80 hover:bg-violet-50 border border-gray-100 hover:border-violet-200 rounded-2xl transition-all duration-300 hover:shadow-md hover:-translate-y-0.5"
+              className="group flex-1 max-w-[280px] md:max-w-none w-full flex flex-col items-center text-center p-4 bg-gray-50/80 hover:bg-violet-50 border border-gray-100 hover:border-violet-200 rounded-2xl transition-all duration-300 hover:shadow-md hover:-translate-y-0.5"
             >
               <div className="w-12 h-12 bg-violet-100 rounded-xl flex items-center justify-center mb-3 text-violet-600 group-hover:scale-110 transition-transform">
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
@@ -117,7 +117,7 @@ export const PlatformSelector: React.FC<PlatformSelectorProps> = ({ isOpen, onCl
             {/* Pet Dating */}
             <button
               onClick={() => { navigate('/?mode=dating'); onClose(); }}
-              className="group flex-1 max-w-[280px] sm:max-w-none w-full flex flex-col items-center text-center p-4 bg-gray-50/80 hover:bg-rose-50 border border-gray-100 hover:border-rose-200 rounded-2xl transition-all duration-300 hover:shadow-md hover:-translate-y-0.5"
+              className="group flex-1 max-w-[280px] md:max-w-none w-full flex flex-col items-center text-center p-4 bg-gray-50/80 hover:bg-rose-50 border border-gray-100 hover:border-rose-200 rounded-2xl transition-all duration-300 hover:shadow-md hover:-translate-y-0.5"
             >
               <div className="w-12 h-12 bg-rose-100 rounded-xl flex items-center justify-center mb-3 text-rose-600 group-hover:scale-110 transition-transform">
                 <HeartIcon className="w-6 h-6 text-rose-500" />
@@ -129,7 +129,7 @@ export const PlatformSelector: React.FC<PlatformSelectorProps> = ({ isOpen, onCl
             {/* Find Vets */}
             <button
               onClick={() => { navigate('/vets'); onClose(); }}
-              className="group flex-1 max-w-[280px] sm:max-w-none w-full flex flex-col items-center text-center p-4 bg-gray-50/80 hover:bg-emerald-50 border border-gray-100 hover:border-emerald-200 rounded-2xl transition-all duration-300 hover:shadow-md hover:-translate-y-0.5"
+              className="group flex-1 max-w-[280px] md:max-w-none w-full flex flex-col items-center text-center p-4 bg-gray-50/80 hover:bg-emerald-50 border border-gray-100 hover:border-emerald-200 rounded-2xl transition-all duration-300 hover:shadow-md hover:-translate-y-0.5"
             >
               <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center mb-3 text-emerald-600 group-hover:scale-110 transition-transform">
                 <svg className="w-6 h-6 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
@@ -163,11 +163,11 @@ export const PlatformSelector: React.FC<PlatformSelectorProps> = ({ isOpen, onCl
           <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Choose Platform</h2>
           <p className="text-gray-500 font-medium">Select how you want to use Peto today</p>
         </div>
-        <div className="flex flex-col sm:flex-row justify-center items-center sm:items-stretch gap-4 relative z-10 w-full max-w-3xl mx-auto px-4">
+        <div className="flex flex-col md:flex-row justify-center items-center md:items-stretch gap-4 relative z-10 w-full max-w-3xl mx-auto px-4">
           {showMarketplace && (
             <button
               onClick={() => { navigate('/?mode=sell'); onClose(); }}
-              className="group relative bg-white border-2 border-violet-100 hover:border-violet-500 rounded-2xl p-6 text-left transition-all duration-300 hover:shadow-xl hover:-translate-y-1 w-full max-w-[280px] sm:max-w-xs flex-1"
+              className="group relative bg-white border-2 border-violet-100 hover:border-violet-500 rounded-2xl p-6 text-left transition-all duration-300 hover:shadow-xl hover:-translate-y-1 w-full max-w-[280px] md:max-w-xs flex-1"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-violet-50 to-fuchsia-50 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
               <div className="relative">
@@ -185,7 +185,7 @@ export const PlatformSelector: React.FC<PlatformSelectorProps> = ({ isOpen, onCl
           {showDating && (
             <button
               onClick={() => { navigate('/?mode=dating'); onClose(); }}
-              className="group relative bg-white border-2 border-rose-100 hover:border-rose-500 rounded-2xl p-6 text-left transition-all duration-300 hover:shadow-xl hover:-translate-y-1 w-full max-w-[280px] sm:max-w-xs flex-1"
+              className="group relative bg-white border-2 border-rose-100 hover:border-rose-500 rounded-2xl p-6 text-left transition-all duration-300 hover:shadow-xl hover:-translate-y-1 w-full max-w-[280px] md:max-w-xs flex-1"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-rose-50 to-pink-50 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
               <div className="relative">
@@ -201,7 +201,7 @@ export const PlatformSelector: React.FC<PlatformSelectorProps> = ({ isOpen, onCl
           {showVets && (
             <button
               onClick={() => { navigate('/vets'); onClose(); }}
-              className="group relative bg-white border-2 border-emerald-100 hover:border-emerald-500 rounded-2xl p-6 text-left transition-all duration-300 hover:shadow-xl hover:-translate-y-1 w-full max-w-[280px] sm:max-w-xs flex-1"
+              className="group relative bg-white border-2 border-emerald-100 hover:border-emerald-500 rounded-2xl p-6 text-left transition-all duration-300 hover:shadow-xl hover:-translate-y-1 w-full max-w-[280px] md:max-w-xs flex-1"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 to-teal-50 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
               <div className="relative">
