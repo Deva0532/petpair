@@ -46,6 +46,18 @@ const breedsByType: Record<string, string[]> = {
 export const PetFilters: React.FC<PetFiltersProps> = ({ filters, onFiltersChange, activeTab = 'sell', isOpen, onToggle, onClose }) => {
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
 
+  const [minAgeInput, setMinAgeInput] = useState<string>(filters.minAge === '' ? '' : filters.minAge.toString());
+  const [maxAgeInput, setMaxAgeInput] = useState<string>(filters.maxAge === '' ? '' : filters.maxAge.toString());
+  const [minPriceInput, setMinPriceInput] = useState<string>(filters.minPrice === '' ? '' : filters.minPrice.toString());
+  const [maxPriceInput, setMaxPriceInput] = useState<string>(filters.maxPrice === '' ? '' : filters.maxPrice.toString());
+
+  useEffect(() => {
+    setMinAgeInput(filters.minAge === '' ? '' : filters.minAge.toString());
+    setMaxAgeInput(filters.maxAge === '' ? '' : filters.maxAge.toString());
+    setMinPriceInput(filters.minPrice === '' ? '' : filters.minPrice.toString());
+    setMaxPriceInput(filters.maxPrice === '' ? '' : filters.maxPrice.toString());
+  }, [filters.minAge, filters.maxAge, filters.minPrice, filters.maxPrice]);
+
   const updateFilter = (key: keyof FilterOptions, value: any) => {
     onFiltersChange({ ...filters, [key]: value });
   };
@@ -163,18 +175,20 @@ export const PetFilters: React.FC<PetFiltersProps> = ({ filters, onFiltersChange
           </span>
         </div>
         <div className="flex items-center gap-3">
-          <input type="number" placeholder="0" value={filters.minAge}
+          <input type="number" placeholder="Min" value={minAgeInput}
             onChange={(e) => {
               const val = e.target.value;
-              updateFilter('minAge', val === '' ? '' : parseInt(val));
+              setMinAgeInput(val);
+              updateFilter('minAge', val === '' ? '' : parseFloat(val));
             }}
             className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-center focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none bg-gray-50"
           />
           <span className="text-gray-300">-</span>
-          <input type="number" placeholder="20" value={filters.maxAge}
+          <input type="number" placeholder="Max" value={maxAgeInput}
             onChange={(e) => {
               const val = e.target.value;
-              updateFilter('maxAge', val === '' ? '' : parseInt(val));
+              setMaxAgeInput(val);
+              updateFilter('maxAge', val === '' ? '' : parseFloat(val));
             }}
             className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-center focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none bg-gray-50"
           />
@@ -186,18 +200,20 @@ export const PetFilters: React.FC<PetFiltersProps> = ({ filters, onFiltersChange
         <div>
           <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Price Range (₹)</label>
           <div className="flex items-center gap-3">
-            <input type="number" placeholder="0" value={filters.minPrice}
+            <input type="number" placeholder="Min" value={minPriceInput}
               onChange={(e) => {
                 const val = e.target.value;
-                updateFilter('minPrice', val === '' ? '' : parseInt(val));
+                setMinPriceInput(val);
+                updateFilter('minPrice', val === '' ? '' : parseFloat(val));
               }}
               className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-center focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none bg-gray-50"
             />
             <span className="text-gray-300">-</span>
-            <input type="number" placeholder="500000" value={filters.maxPrice}
+            <input type="number" placeholder="Max" value={maxPriceInput}
               onChange={(e) => {
                 const val = e.target.value;
-                updateFilter('maxPrice', val === '' ? '' : parseInt(val));
+                setMaxPriceInput(val);
+                updateFilter('maxPrice', val === '' ? '' : parseFloat(val));
               }}
               className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-center focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none bg-gray-50"
             />
@@ -317,21 +333,17 @@ export const PetFilters: React.FC<PetFiltersProps> = ({ filters, onFiltersChange
       </button>
 
       {/* Mobile slide-over backdrop */}
+      {/* Mobile slide-over backdrop */}
       {isOpen && (
-        <div className="lg:hidden fixed inset-0 z-50">
+        <div className="lg:hidden fixed inset-0 z-50 flex justify-end">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
 
           {/* Slide-over panel */}
-          <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl max-h-[85vh] flex flex-col animate-slide-up">
-            {/* Handle bar */}
-            <div className="flex justify-center py-3">
-              <div className="w-10 h-1 bg-gray-300 rounded-full" />
-            </div>
-
+          <div className="relative w-full max-w-sm sm:max-w-md bg-white shadow-2xl h-full flex flex-col animate-slide-left">
             {/* Header */}
-            <div className="flex items-center justify-between px-6 pb-4 border-b border-gray-100">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
               <div className="flex items-center gap-3">
-                <div className="bg-violet-50 p-2 rounded-xl">
+                <div className="bg-violet-50 p-2.5 rounded-xl">
                   <FunnelIcon className="w-5 h-5 text-violet-600" />
                 </div>
                 <h3 className="text-lg font-bold text-gray-900">Filters</h3>
@@ -343,7 +355,7 @@ export const PetFilters: React.FC<PetFiltersProps> = ({ filters, onFiltersChange
               </div>
               <div className="flex items-center gap-3">
                 {activeFilterCount > 0 && (
-                  <button onClick={clearFilters} className="text-xs font-semibold text-rose-500 uppercase tracking-wide">
+                  <button onClick={clearFilters} className="text-xs font-bold text-rose-500 uppercase tracking-wide px-3 py-1.5 hover:bg-rose-50 rounded-lg transition-colors">
                     Reset
                   </button>
                 )}
@@ -362,7 +374,7 @@ export const PetFilters: React.FC<PetFiltersProps> = ({ filters, onFiltersChange
             <div className="p-4 border-t border-gray-100 bg-gray-50">
               <button
                 onClick={onClose}
-                className="w-full py-3 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-xl font-semibold shadow-lg hover:from-violet-700 hover:to-purple-700 transition-all"
+                className="w-full py-3.5 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-xl font-bold shadow-lg hover:from-violet-700 hover:to-purple-700 transition-all active:scale-[0.98]"
               >
                 Show Results
               </button>
@@ -371,14 +383,14 @@ export const PetFilters: React.FC<PetFiltersProps> = ({ filters, onFiltersChange
         </div>
       )}
 
-      {/* Mobile slide-up animation */}
+      {/* Mobile slide-left animation */}
       <style>{`
-        @keyframes slideUp {
-          from { transform: translateY(100%); }
-          to { transform: translateY(0); }
+        @keyframes slideLeft {
+          from { transform: translateX(100%); }
+          to { transform: translateX(0); }
         }
-        .animate-slide-up {
-          animation: slideUp 0.3s ease-out;
+        .animate-slide-left {
+          animation: slideLeft 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
       `}</style>
     </>
