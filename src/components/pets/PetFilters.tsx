@@ -5,10 +5,10 @@ interface FilterOptions {
   type: string;
   breed: string;
   gender: string;
-  minAge: number;
-  maxAge: number;
-  minPrice: number;
-  maxPrice: number;
+  minAge: number | '';
+  maxAge: number | '';
+  minPrice: number | '';
+  maxPrice: number | '';
   location: string;
   radius: number;
   vaccinated?: boolean;
@@ -60,10 +60,10 @@ export const PetFilters: React.FC<PetFiltersProps> = ({ filters, onFiltersChange
     filters.type !== 'all',
     filters.breed !== '',
     filters.gender !== 'any',
-    filters.minAge > 0,
-    filters.maxAge < 20,
-    filters.minPrice > 0,
-    filters.maxPrice < 500000,
+    filters.minAge !== '' && filters.minAge > 0,
+    filters.maxAge !== '' && filters.maxAge < 20,
+    filters.minPrice !== '' && filters.minPrice > 0,
+    filters.maxPrice !== '' && filters.maxPrice < 500000,
     filters.sizePreference !== 'any',
     filters.activityLevel !== 'any',
     filters.vaccinated === true,
@@ -159,17 +159,23 @@ export const PetFilters: React.FC<PetFiltersProps> = ({ filters, onFiltersChange
         <div className="flex items-center justify-between mb-3">
           <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Age (Years)</label>
           <span className="text-xs font-semibold text-violet-600 bg-violet-50 px-2 py-0.5 rounded-md">
-            {filters.minAge} - {filters.maxAge}
+            {filters.minAge === '' ? 0 : filters.minAge} - {filters.maxAge === '' ? 20 : filters.maxAge}
           </span>
         </div>
         <div className="flex items-center gap-3">
           <input type="number" placeholder="0" value={filters.minAge}
-            onChange={(e) => updateFilter('minAge', parseInt(e.target.value) || 0)}
+            onChange={(e) => {
+              const val = e.target.value;
+              updateFilter('minAge', val === '' ? '' : parseInt(val));
+            }}
             className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-center focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none bg-gray-50"
           />
           <span className="text-gray-300">-</span>
           <input type="number" placeholder="20" value={filters.maxAge}
-            onChange={(e) => updateFilter('maxAge', parseInt(e.target.value) || 20)}
+            onChange={(e) => {
+              const val = e.target.value;
+              updateFilter('maxAge', val === '' ? '' : parseInt(val));
+            }}
             className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-center focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none bg-gray-50"
           />
         </div>
@@ -180,13 +186,19 @@ export const PetFilters: React.FC<PetFiltersProps> = ({ filters, onFiltersChange
         <div>
           <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Price Range (₹)</label>
           <div className="flex items-center gap-3">
-            <input type="number" placeholder="Min" value={filters.minPrice}
-              onChange={(e) => updateFilter('minPrice', parseInt(e.target.value) || 0)}
+            <input type="number" placeholder="0" value={filters.minPrice}
+              onChange={(e) => {
+                const val = e.target.value;
+                updateFilter('minPrice', val === '' ? '' : parseInt(val));
+              }}
               className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-center focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none bg-gray-50"
             />
             <span className="text-gray-300">-</span>
-            <input type="number" placeholder="Max" value={filters.maxPrice}
-              onChange={(e) => updateFilter('maxPrice', parseInt(e.target.value) || 500000)}
+            <input type="number" placeholder="500000" value={filters.maxPrice}
+              onChange={(e) => {
+                const val = e.target.value;
+                updateFilter('maxPrice', val === '' ? '' : parseInt(val));
+              }}
               className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-center focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none bg-gray-50"
             />
           </div>

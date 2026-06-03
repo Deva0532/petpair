@@ -13,10 +13,10 @@ interface FilterOptions {
   type: string;
   breed: string;
   gender: string;
-  minAge: number;
-  maxAge: number;
-  minPrice: number;
-  maxPrice: number;
+  minAge: number | '';
+  maxAge: number | '';
+  minPrice: number | '';
+  maxPrice: number | '';
   location: string;
   radius: number;
   vaccinated?: boolean;

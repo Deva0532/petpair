@@ -55,7 +55,7 @@ export const PlatformSelector: React.FC<PlatformSelectorProps> = ({ isOpen, onCl
   if (isWelcome) {
     return (
       <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fadeIn">
-        <div className="mode-switcher-modal bg-white rounded-[2rem] shadow-2xl px-8 pt-8 pb-10 max-w-lg w-full transform transition-all relative overflow-hidden">
+        <div className="mode-switcher-modal bg-white rounded-[2rem] shadow-2xl px-6 sm:px-8 pt-8 pb-10 max-w-lg w-full max-h-[90vh] overflow-y-auto transform transition-all relative">
           <button
             onClick={onClose}
             className="absolute top-4 right-4 p-2 text-gray-400 hover:bg-gray-100 rounded-full transition-colors z-10"
@@ -99,7 +99,7 @@ export const PlatformSelector: React.FC<PlatformSelectorProps> = ({ isOpen, onCl
           </div>
 
           {/* Horizontal 3-column card row */}
-          <div className="grid grid-cols-3 gap-3 relative z-10">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 relative z-10">
             {/* Marketplace */}
             <button
               onClick={() => { navigate('/?mode=sell'); onClose(); }}
@@ -152,7 +152,7 @@ export const PlatformSelector: React.FC<PlatformSelectorProps> = ({ isOpen, onCl
   // ─── Normal Platform Switcher (navbar click) ─────────────────────
   return (
     <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fadeIn">
-      <div className="mode-switcher-modal bg-white rounded-[2rem] shadow-2xl p-8 max-w-4xl w-full transform transition-all relative overflow-hidden">
+      <div className="mode-switcher-modal bg-white rounded-[2rem] shadow-2xl p-6 sm:p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto transform transition-all relative">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 p-2 text-gray-400 hover:bg-gray-100 rounded-full transition-colors z-10"
@@ -163,7 +163,7 @@ export const PlatformSelector: React.FC<PlatformSelectorProps> = ({ isOpen, onCl
           <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Choose Platform</h2>
           <p className="text-gray-500 font-medium">Select how you want to use Peto today</p>
         </div>
-        <div className="grid grid-cols-3 gap-4 relative z-10 w-full max-w-2xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 relative z-10 w-full max-w-2xl mx-auto">
           {showMarketplace && (
             <button
               onClick={() => { navigate('/?mode=sell'); onClose(); }}
