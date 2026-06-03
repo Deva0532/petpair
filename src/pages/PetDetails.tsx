@@ -592,7 +592,7 @@ export const PetDetails: React.FC = () => {
             {/* Tabs Section */}
             <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
                 {/* Tab Navigation */}
-                <div className="flex gap-1.5 p-1.5 bg-white rounded-2xl border border-slate-100 shadow-sm mb-8 max-w-full overflow-x-auto scrollbar-hide whitespace-nowrap">
+                <div className="grid grid-cols-4 md:flex gap-1 p-1 bg-white rounded-2xl border border-slate-100 shadow-sm mb-8 w-full md:max-w-fit">
                     {[
                         { key: 'overview', label: 'Overview', icon: '📋' },
                         { key: 'health', label: 'Health', icon: '🏥' },
@@ -602,14 +602,14 @@ export const PetDetails: React.FC = () => {
                         <button
                             key={tab.key}
                             onClick={() => setActiveTab(tab.key as any)}
-                            className={`flex-shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${
+                            className={`flex items-center justify-center gap-1 sm:gap-2 px-1 sm:px-5 py-2 sm:py-2.5 rounded-xl font-bold text-[10px] sm:text-sm transition-all ${
                                 activeTab === tab.key
                                     ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-200/50'
                                     : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
                             }`}
                         >
-                            <span className="text-sm">{tab.icon}</span>
-                            {tab.label}
+                            <span className="hidden sm:inline text-sm">{tab.icon}</span>
+                            <span className="truncate">{tab.label}</span>
                         </button>
                     ))}
                 </div>

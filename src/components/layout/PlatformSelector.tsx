@@ -99,45 +99,51 @@ export const PlatformSelector: React.FC<PlatformSelectorProps> = ({ isOpen, onCl
           </div>
 
           {/* Horizontal 3-column card row */}
-          <div className="flex flex-col md:flex-row justify-center items-center md:items-stretch gap-3 relative z-10 w-full">
+          <div className="flex flex-col md:flex-row justify-center items-center md:items-stretch gap-2.5 relative z-10 w-full">
             {/* Marketplace */}
             <button
               onClick={() => { navigate('/?mode=sell'); onClose(); }}
-              className="group flex-1 max-w-[280px] md:max-w-none w-full flex flex-col items-center text-center p-4 bg-gray-50/80 hover:bg-violet-50 border border-gray-100 hover:border-violet-200 rounded-2xl transition-all duration-300 hover:shadow-md hover:-translate-y-0.5"
+              className="group flex-1 max-w-[320px] md:max-w-none w-full flex flex-row md:flex-col items-center md:items-center text-left md:text-center p-3 md:p-4 bg-gray-50/80 hover:bg-violet-50 border border-gray-100 hover:border-violet-200 rounded-2xl transition-all duration-300 hover:shadow-md hover:-translate-y-0.5"
             >
-              <div className="w-12 h-12 bg-violet-100 rounded-xl flex items-center justify-center mb-3 text-violet-600 group-hover:scale-110 transition-transform">
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <div className="w-10 h-10 md:w-12 md:h-12 bg-violet-100 rounded-xl flex items-center justify-center text-violet-600 group-hover:scale-110 transition-transform flex-shrink-0 mr-3 md:mr-0 md:mb-3">
+                <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                 </svg>
               </div>
-              <h3 className="text-sm font-bold text-gray-900 group-hover:text-violet-700 transition-colors mb-0.5">Marketplace</h3>
-              <p className="text-[11px] text-gray-400 leading-snug">Buy, sell, or adopt pets</p>
+              <div className="min-w-0 flex-1 md:flex-none">
+                <h3 className="text-xs md:text-sm font-bold text-gray-900 group-hover:text-violet-700 transition-colors mb-0.5">Marketplace</h3>
+                <p className="text-[10px] md:text-[11px] text-gray-400 leading-snug">Buy, sell, or adopt pets</p>
+              </div>
             </button>
 
             {/* Pet Dating */}
             <button
               onClick={() => { navigate('/?mode=dating'); onClose(); }}
-              className="group flex-1 max-w-[280px] md:max-w-none w-full flex flex-col items-center text-center p-4 bg-gray-50/80 hover:bg-rose-50 border border-gray-100 hover:border-rose-200 rounded-2xl transition-all duration-300 hover:shadow-md hover:-translate-y-0.5"
+              className="group flex-1 max-w-[320px] md:max-w-none w-full flex flex-row md:flex-col items-center md:items-center text-left md:text-center p-3 md:p-4 bg-gray-50/80 hover:bg-rose-50 border border-gray-100 hover:border-rose-200 rounded-2xl transition-all duration-300 hover:shadow-md hover:-translate-y-0.5"
             >
-              <div className="w-12 h-12 bg-rose-100 rounded-xl flex items-center justify-center mb-3 text-rose-600 group-hover:scale-110 transition-transform">
-                <HeartIcon className="w-6 h-6 text-rose-500" />
+              <div className="w-10 h-10 md:w-12 md:h-12 bg-rose-100 rounded-xl flex items-center justify-center text-rose-600 group-hover:scale-110 transition-transform flex-shrink-0 mr-3 md:mr-0 md:mb-3">
+                <HeartIcon className="w-5 h-5 md:w-6 md:h-6 text-rose-500" />
               </div>
-              <h3 className="text-sm font-bold text-gray-900 group-hover:text-rose-700 transition-colors mb-0.5">Pet Dating</h3>
-              <p className="text-[11px] text-gray-400 leading-snug">Playdate & mating</p>
+              <div className="min-w-0 flex-1 md:flex-none">
+                <h3 className="text-xs md:text-sm font-bold text-gray-900 group-hover:text-rose-700 transition-colors mb-0.5">Pet Dating</h3>
+                <p className="text-[10px] md:text-[11px] text-gray-400 leading-snug">Playdate & mating</p>
+              </div>
             </button>
 
             {/* Find Vets */}
             <button
               onClick={() => { navigate('/vets'); onClose(); }}
-              className="group flex-1 max-w-[280px] md:max-w-none w-full flex flex-col items-center text-center p-4 bg-gray-50/80 hover:bg-emerald-50 border border-gray-100 hover:border-emerald-200 rounded-2xl transition-all duration-300 hover:shadow-md hover:-translate-y-0.5"
+              className="group flex-1 max-w-[320px] md:max-w-none w-full flex flex-row md:flex-col items-center md:items-center text-left md:text-center p-3 md:p-4 bg-gray-50/80 hover:bg-emerald-50 border border-gray-100 hover:border-emerald-200 rounded-2xl transition-all duration-300 hover:shadow-md hover:-translate-y-0.5"
             >
-              <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center mb-3 text-emerald-600 group-hover:scale-110 transition-transform">
-                <svg className="w-6 h-6 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <div className="w-10 h-10 md:w-12 md:h-12 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform flex-shrink-0 mr-3 md:mr-0 md:mb-3">
+                <svg className="w-5 h-5 md:w-6 md:h-6 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
                 </svg>
               </div>
-              <h3 className="text-sm font-bold text-gray-900 group-hover:text-emerald-700 transition-colors mb-0.5">Find Vets</h3>
-              <p className="text-[11px] text-gray-400 leading-snug">Trusted vets near you</p>
+              <div className="min-w-0 flex-1 md:flex-none">
+                <h3 className="text-xs md:text-sm font-bold text-gray-900 group-hover:text-emerald-700 transition-colors mb-0.5">Find Vets</h3>
+                <p className="text-[10px] md:text-[11px] text-gray-400 leading-snug">Trusted vets near you</p>
+              </div>
             </button>
           </div>
 
@@ -167,17 +173,19 @@ export const PlatformSelector: React.FC<PlatformSelectorProps> = ({ isOpen, onCl
           {showMarketplace && (
             <button
               onClick={() => { navigate('/?mode=sell'); onClose(); }}
-              className="group relative bg-white border-2 border-violet-100 hover:border-violet-500 rounded-2xl p-6 text-left transition-all duration-300 hover:shadow-xl hover:-translate-y-1 w-full max-w-[280px] md:max-w-xs flex-1"
+              className="group relative bg-white border-2 border-violet-100 hover:border-violet-500 rounded-2xl p-4 md:p-6 text-left transition-all duration-300 hover:shadow-xl hover:-translate-y-1 w-full max-w-[320px] md:max-w-xs flex-1"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-violet-50 to-fuchsia-50 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
-              <div className="relative">
-                <div className="w-14 h-14 bg-violet-100 rounded-xl flex items-center justify-center mb-4 text-violet-600 group-hover:scale-110 transition-transform">
-                  <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="relative flex flex-row md:flex-col items-center md:items-start">
+                <div className="w-10 h-10 md:w-14 md:h-14 bg-violet-100 rounded-xl flex items-center justify-center text-violet-600 group-hover:scale-110 transition-transform flex-shrink-0 mr-4 md:mr-0 md:mb-4">
+                  <svg className="w-5 h-5 md:w-7 md:h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-1 group-hover:text-violet-700 transition-colors">Marketplace</h3>
-                <p className="text-sm text-gray-500">Buy, sell, or adopt your perfect companion.</p>
+                <div className="min-w-0">
+                  <h3 className="text-base md:text-xl font-bold text-gray-900 mb-0.5 md:mb-1 group-hover:text-violet-700 transition-colors">Marketplace</h3>
+                  <p className="text-xs md:text-sm text-gray-500 leading-snug">Buy, sell, or adopt your perfect companion.</p>
+                </div>
               </div>
             </button>
           )}
@@ -185,15 +193,17 @@ export const PlatformSelector: React.FC<PlatformSelectorProps> = ({ isOpen, onCl
           {showDating && (
             <button
               onClick={() => { navigate('/?mode=dating'); onClose(); }}
-              className="group relative bg-white border-2 border-rose-100 hover:border-rose-500 rounded-2xl p-6 text-left transition-all duration-300 hover:shadow-xl hover:-translate-y-1 w-full max-w-[280px] md:max-w-xs flex-1"
+              className="group relative bg-white border-2 border-rose-100 hover:border-rose-500 rounded-2xl p-4 md:p-6 text-left transition-all duration-300 hover:shadow-xl hover:-translate-y-1 w-full max-w-[320px] md:max-w-xs flex-1"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-rose-50 to-pink-50 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
-              <div className="relative">
-                <div className="w-14 h-14 bg-rose-100 rounded-xl flex items-center justify-center mb-4 text-rose-600 group-hover:scale-110 transition-transform">
-                  <HeartIcon className="w-7 h-7 text-rose-500" />
+              <div className="relative flex flex-row md:flex-col items-center md:items-start">
+                <div className="w-10 h-10 md:w-14 md:h-14 bg-rose-100 rounded-xl flex items-center justify-center text-rose-600 group-hover:scale-110 transition-transform flex-shrink-0 mr-4 md:mr-0 md:mb-4">
+                  <HeartIcon className="w-5 h-5 md:w-7 md:h-7 text-rose-500" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-1 group-hover:text-rose-700 transition-colors">Pet Dating</h3>
-                <p className="text-sm text-gray-500">Find playdates and mating partners.</p>
+                <div className="min-w-0">
+                  <h3 className="text-base md:text-xl font-bold text-gray-900 mb-0.5 md:mb-1 group-hover:text-rose-700 transition-colors">Pet Dating</h3>
+                  <p className="text-xs md:text-sm text-gray-500 leading-snug">Find playdates and mating partners.</p>
+                </div>
               </div>
             </button>
           )}
@@ -201,17 +211,19 @@ export const PlatformSelector: React.FC<PlatformSelectorProps> = ({ isOpen, onCl
           {showVets && (
             <button
               onClick={() => { navigate('/vets'); onClose(); }}
-              className="group relative bg-white border-2 border-emerald-100 hover:border-emerald-500 rounded-2xl p-6 text-left transition-all duration-300 hover:shadow-xl hover:-translate-y-1 w-full max-w-[280px] md:max-w-xs flex-1"
+              className="group relative bg-white border-2 border-emerald-100 hover:border-emerald-500 rounded-2xl p-4 md:p-6 text-left transition-all duration-300 hover:shadow-xl hover:-translate-y-1 w-full max-w-[320px] md:max-w-xs flex-1"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 to-teal-50 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
-              <div className="relative">
-                <div className="w-14 h-14 bg-emerald-100 rounded-xl flex items-center justify-center mb-4 text-emerald-600 group-hover:scale-110 transition-transform">
-                  <svg className="w-7 h-7 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="relative flex flex-row md:flex-col items-center md:items-start">
+                <div className="w-10 h-10 md:w-14 md:h-14 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform flex-shrink-0 mr-4 md:mr-0 md:mb-4">
+                  <svg className="w-5 h-5 md:w-7 md:h-7 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-1 group-hover:text-emerald-700 transition-colors">Find Vets</h3>
-                <p className="text-sm text-gray-500">Locate trusted veterinarians near you.</p>
+                <div className="min-w-0">
+                  <h3 className="text-base md:text-xl font-bold text-gray-900 mb-0.5 md:mb-1 group-hover:text-emerald-700 transition-colors">Find Vets</h3>
+                  <p className="text-xs md:text-sm text-gray-500 leading-snug">Locate trusted veterinarians near you.</p>
+                </div>
               </div>
             </button>
           )}
