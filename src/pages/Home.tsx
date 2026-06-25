@@ -125,8 +125,8 @@ export const Home: React.FC = () => {
     type: 'all',
     breed: '',
     gender: 'any',
-    minAge: 0,
-    maxAge: 20,
+    minAge: '',
+    maxAge: '',
     minPrice: 0,
     maxPrice: 500000,
     location: '',
@@ -150,7 +150,7 @@ export const Home: React.FC = () => {
     const fetchPets = async () => {
       setLoading(true);
       try {
-        const { pets: fetchedPets, pagination: paginationData } = await getPets(currentPage, 12, sortBy, filters, activeTab);
+        const { pets: fetchedPets, pagination: paginationData } = await getPets(currentPage, 12, sortBy, filters, activeTab, true, true, true);
         setPets(fetchedPets);
         setPagination(paginationData);
       } catch (error) {
@@ -202,19 +202,8 @@ export const Home: React.FC = () => {
     fetchWishlist();
   }, [user]);
 
-  // Only filter out user's own pets client-side
-  // All other filtering should be done on backend for proper pagination
-  const filteredPets = pets.filter(pet => {
-    if (pet.status === 'sold') return false;
-    // If logged in, filter out own pets
-    if (user && pet.owner && (pet.owner.id === user.id || (pet.owner as any)._id === user.id)) return false;
-    // Filter out admin pets from the marketplace
-    if (pet.owner && (pet.owner.role === 'admin' || (pet.owner as any).role === 'admin')) return false;
-    return true;
-  });
-
-  // Use filtered pets for display
-  const displayPets = filteredPets;
+  // Use pets directly as they are already filtered by the backend
+  const displayPets = pets;
 
   // Use pagination total for count
   const displayCount = pagination.totalPets;

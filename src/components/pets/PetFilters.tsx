@@ -73,7 +73,7 @@ export const PetFilters: React.FC<PetFiltersProps> = ({ filters, onFiltersChange
     filters.breed !== '',
     filters.gender !== 'any',
     filters.minAge !== '' && filters.minAge > 0,
-    filters.maxAge !== '' && filters.maxAge < 20,
+    filters.maxAge !== '',
     filters.minPrice !== '' && filters.minPrice > 0,
     filters.maxPrice !== '' && filters.maxPrice < 500000,
     filters.sizePreference !== 'any',
@@ -89,8 +89,8 @@ export const PetFilters: React.FC<PetFiltersProps> = ({ filters, onFiltersChange
       type: 'all',
       breed: '',
       gender: 'any',
-      minAge: 0,
-      maxAge: 20,
+      minAge: '',
+      maxAge: '',
       minPrice: 0,
       maxPrice: 500000,
       location: '',
@@ -171,7 +171,7 @@ export const PetFilters: React.FC<PetFiltersProps> = ({ filters, onFiltersChange
         <div className="flex items-center justify-between mb-3">
           <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Age (Years)</label>
           <span className="text-xs font-semibold text-violet-600 bg-violet-50 px-2 py-0.5 rounded-md">
-            {filters.minAge === '' ? 0 : filters.minAge} - {filters.maxAge === '' ? 20 : filters.maxAge}
+            {filters.minAge === '' ? 0 : filters.minAge} - {filters.maxAge === '' ? 'Any' : filters.maxAge}
           </span>
         </div>
         <div className="flex items-center gap-3">

@@ -134,7 +134,10 @@ export const getPets = async (
     limit: number = 12,
     sortBy: string = 'recent',
     filters: any = {},
-    activeTab: string = 'sell'
+    activeTab: string = 'sell',
+    excludeOwn: boolean = false,
+    excludeAdmin: boolean = false,
+    excludeSold: boolean = false
 ): Promise<{
     pets: any[];
     pagination: {
@@ -171,9 +174,19 @@ export const getPets = async (
         if (filters.houseTrained !== undefined) params.append('houseTrained', filters.houseTrained.toString());
         if (filters.spayedNeutered !== undefined) params.append('spayedNeutered', filters.spayedNeutered.toString());
         if (filters.specialNeeds !== undefined) params.append('specialNeeds', filters.specialNeeds.toString());
+        if (excludeOwn) params.append('excludeOwn', 'true');
+        if (excludeAdmin) params.append('excludeAdmin', 'true');
+        if (excludeSold) params.append('excludeSold', 'true');
+        if (filters.status) params.append('status', filters.status);
         if (filters.q) params.append('q', filters.q);
 
-        const response = await fetch(`${API_BASE}/pets?${params.toString()}`);
+        const headers: HeadersInit = {};
+        const token = localStorage.getItem('token');
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(`${API_BASE}/pets?${params.toString()}`, { headers });
         if (!response.ok) {
             throw new Error('Failed to fetch pets');
         }

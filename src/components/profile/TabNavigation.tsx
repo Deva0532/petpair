@@ -25,7 +25,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabCh
   const isAdmin = user?.role === 'admin';
 
   return (
-    <div className="flex justify-center -mt-10 sm:-mt-12 relative z-20 px-4">
+    <div className="flex justify-center mt-6 sm:-mt-10 lg:-mt-12 relative z-20 px-4">
       <div className={`p-1.5 rounded-full backdrop-blur-3xl shadow-xl flex items-center space-x-1 sm:space-x-2 border transition-colors ${
         isAdmin ? 'bg-white/80 border-cyan-200/50 shadow-cyan-900/5' : isKennel ? 'bg-amber-900/5 min-w-max border-amber-200/50 shadow-amber-900/10' : 'bg-white/40 min-w-max border-white/60 shadow-violet-900/5'
       }`}>

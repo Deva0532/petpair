@@ -61,6 +61,11 @@ export const PetDetails: React.FC = () => {
     const [showEditModal, setShowEditModal] = useState(false);
     const [editReviewData, setEditReviewData] = useState({ rating: 0, comment: '' });
 
+    // Scroll to top when pet ID changes
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [id]);
+
     useEffect(() => {
         const fetchPetDetails = async () => {
             if (!id) return;
@@ -452,7 +457,7 @@ export const PetDetails: React.FC = () => {
 
                         {/* Thumbnail strip with smooth snap scroll */}
                         {media.length > 1 && (
-                            <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-hide snap-x snap-mandatory scroll-smooth px-0.5">
+                            <div className="flex gap-2.5 overflow-x-auto py-2 scrollbar-hide snap-x snap-mandatory scroll-smooth px-1">
                                 {media.map((item, index) => (
                                     <button
                                         key={index}

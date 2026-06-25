@@ -81,7 +81,7 @@ export const PersonalInfoTab: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <Card className="p-8">
+      <Card className="p-5 sm:p-8">
         <div className="flex items-center justify-between mb-8">
           <h2 className="text-2xl font-bold text-gray-900">Personal Information</h2>
           {!isEditing ? (
@@ -146,7 +146,7 @@ export const PersonalInfoTab: React.FC = () => {
 
           {/* Email with verification indicator */}
           <div className="w-full">
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex flex-wrap items-center gap-2 mb-1">
               <label className="block text-sm font-medium text-gray-700">
                 Email Address (Read Only)
               </label>
@@ -178,7 +178,7 @@ export const PersonalInfoTab: React.FC = () => {
 
           {/* Phone with verification indicator */}
           <div className="w-full">
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex flex-wrap items-center gap-2 mb-1">
               <label className="block text-sm font-medium text-gray-700">
                 Phone Number
               </label>

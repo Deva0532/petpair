@@ -829,7 +829,12 @@ app.get('/api/pets', async (req, res) => {
     const sortBy = req.query.sortBy || 'recent';
 
     // Build query with filters
-    const query = { status: { $ne: 'deleted' } };
+    const query = {};
+    if (req.query.excludeSold === 'true') {
+      query.status = 'active';
+    } else {
+      query.status = { $ne: 'deleted' };
+    }
 
     // Apply filters from query parameters
     if (req.query.q) {
@@ -897,10 +902,34 @@ app.get('/api/pets', async (req, res) => {
       query.availableForMating = true;
     }
 
-    // Exclude pets from unapproved kennels
+    // Exclude own/admin/unapproved kennel pets if requested
+    const excludeOwnerIds = [];
+    
+    // Extract userId from token if present
+    let userId = null;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        userId = decoded.userId;
+      } catch (error) {
+        // Ignore invalid token
+      }
+    }
+
+    if (req.query.excludeOwn === 'true' && userId) {
+      excludeOwnerIds.push(new mongoose.Types.ObjectId(userId));
+    }
+    if (req.query.excludeAdmin === 'true') {
+      const admins = await User.find({ role: 'admin' }).select('_id');
+      admins.forEach(a => excludeOwnerIds.push(a._id));
+    }
     const unapprovedKennels = await User.find({ userType: 'kennel', isApproved: false }).select('_id');
-    if (unapprovedKennels.length > 0) {
-      query.ownerId = { $nin: unapprovedKennels.map(u => u._id) };
+    unapprovedKennels.forEach(u => excludeOwnerIds.push(u._id));
+
+    if (excludeOwnerIds.length > 0) {
+      query.ownerId = { $nin: excludeOwnerIds };
     }
 
     // Determine sort order based on sortBy parameter

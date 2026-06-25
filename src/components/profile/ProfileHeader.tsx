@@ -116,7 +116,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ onPhotoChange }) =
 
   return (
     <div className="pt-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-      <div className={`relative overflow-hidden rounded-[2.5rem] p-8 md:p-12 shadow-2xl backdrop-blur-2xl border ${isAdmin ? 'bg-white/90 border-cyan-200/50 shadow-cyan-900/5' : isKennel ? 'bg-white/90 border-amber-200/50 shadow-amber-900/5' : 'bg-white/80 border-white shadow-violet-900/5'}`}>
+      <div className={`relative overflow-hidden rounded-[2rem] md:rounded-[2.5rem] p-5 pb-6 sm:p-8 md:p-12 shadow-2xl backdrop-blur-2xl border ${isAdmin ? 'bg-white/90 border-cyan-200/50 shadow-cyan-900/5' : isKennel ? 'bg-white/90 border-amber-200/50 shadow-amber-900/5' : 'bg-white/80 border-white shadow-violet-900/5'}`}>
         
         {/* Decorative inner glow */}
         {isAdmin ? (
@@ -205,21 +205,21 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ onPhotoChange }) =
 
             {/* Stats Dashboard Widgets - Hide for admin to keep it clean */}
             {!isAdmin && (
-              <div className="grid grid-cols-3 gap-3 md:gap-4 flex-shrink-0 xl:self-center" style={{ minWidth: '280px' }}>
-                <div className={`flex flex-col items-center justify-center p-4 md:px-8 shadow-sm rounded-2xl border transition-transform hover:-translate-y-1 ${isKennel ? 'bg-gradient-to-b from-white to-amber-50/50 border-amber-100/60' : 'bg-white border-violet-100 shadow-violet-100/50'}`}>
-                  <span className={`text-3xl font-black ${isKennel ? 'text-amber-700' : 'text-violet-600'}`}>{stats.petsListed}</span>
-                  <span className={`text-xs font-bold uppercase tracking-wider mt-1 ${isKennel ? 'text-amber-900/50' : 'text-slate-400'}`}>Pets</span>
+              <div className="grid grid-cols-3 gap-2 sm:gap-4 w-full sm:w-auto xl:min-w-[280px] flex-shrink-0 xl:self-center">
+                <div className={`flex flex-col items-center justify-center p-2.5 sm:p-4 md:px-8 shadow-sm rounded-2xl border transition-transform hover:-translate-y-1 ${isKennel ? 'bg-gradient-to-b from-white to-amber-50/50 border-amber-100/60' : 'bg-white border-violet-100 shadow-violet-100/50'}`}>
+                  <span className={`text-2xl sm:text-3xl font-black ${isKennel ? 'text-amber-700' : 'text-violet-600'}`}>{stats.petsListed}</span>
+                  <span className={`text-[10px] sm:text-xs font-bold uppercase tracking-wider mt-1 ${isKennel ? 'text-amber-900/50' : 'text-slate-400'}`}>Pets</span>
                 </div>
-                <div className={`flex flex-col items-center justify-center p-4 md:px-8 shadow-sm rounded-2xl border transition-transform hover:-translate-y-1 ${isKennel ? 'bg-gradient-to-b from-white to-amber-50/50 border-amber-100/60' : 'bg-white border-violet-100 shadow-violet-100/50'}`}>
-                  <span className={`text-3xl font-black ${isKennel ? 'text-amber-700' : 'text-violet-600'}`}>{stats.successfulSales}</span>
-                  <span className={`text-xs font-bold uppercase tracking-wider mt-1 ${isKennel ? 'text-amber-900/50' : 'text-slate-400'}`}>Sales</span>
+                <div className={`flex flex-col items-center justify-center p-2.5 sm:p-4 md:px-8 shadow-sm rounded-2xl border transition-transform hover:-translate-y-1 ${isKennel ? 'bg-gradient-to-b from-white to-amber-50/50 border-amber-100/60' : 'bg-white border-violet-100 shadow-violet-100/50'}`}>
+                  <span className={`text-2xl sm:text-3xl font-black ${isKennel ? 'text-amber-700' : 'text-violet-600'}`}>{stats.successfulSales}</span>
+                  <span className={`text-[10px] sm:text-xs font-bold uppercase tracking-wider mt-1 ${isKennel ? 'text-amber-900/50' : 'text-slate-400'}`}>Sales</span>
                 </div>
-                <div className={`flex flex-col items-center justify-center p-4 md:px-8 shadow-sm rounded-2xl border transition-transform hover:-translate-y-1 ${isKennel ? 'bg-gradient-to-b from-white to-amber-50/50 border-amber-100/60' : 'bg-white border-violet-100 shadow-violet-100/50'}`}>
-                  <span className={`text-3xl font-black flex items-center gap-1 ${isKennel ? 'text-amber-700' : 'text-violet-600'}`}>
+                <div className={`flex flex-col items-center justify-center p-2.5 sm:p-4 md:px-8 shadow-sm rounded-2xl border transition-transform hover:-translate-y-1 ${isKennel ? 'bg-gradient-to-b from-white to-amber-50/50 border-amber-100/60' : 'bg-white border-violet-100 shadow-violet-100/50'}`}>
+                  <span className={`text-2xl sm:text-3xl font-black flex items-center gap-0.5 sm:gap-1 ${isKennel ? 'text-amber-700' : 'text-violet-600'}`}>
                     {stats.rating > 0 ? stats.rating.toFixed(1) : '-'}
-                    <StarSolidIcon className="w-5 h-5 text-yellow-400 pb-0.5" />
+                    <StarSolidIcon className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400 pb-0.5" />
                   </span>
-                  <span className={`text-xs font-bold uppercase tracking-wider mt-1 ${isKennel ? 'text-amber-900/50' : 'text-slate-400'}`}>
+                  <span className={`text-[10px] sm:text-xs font-bold uppercase tracking-wider mt-1 ${isKennel ? 'text-amber-900/50' : 'text-slate-400'} text-center`}>
                     {stats.reviewCount} Reviews
                   </span>
                 </div>

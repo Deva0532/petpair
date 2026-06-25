@@ -45,7 +45,7 @@ export const Profile: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Profile Card */}
           <div className="lg:col-span-1">
-            <Card className="p-6 text-center">
+            <Card className="p-5 sm:p-6 text-center">
               <div className="relative inline-block mb-4">
                 <img
                   src={user.avatar || `https://ui-avatars.com/api/?name=${user.name}&background=3b82f6&color=ffffff&size=150`}
@@ -89,8 +89,8 @@ export const Profile: React.FC = () => {
 
           {/* Profile Form */}
           <div className="lg:col-span-2 space-y-6">
-            <Card className="p-6">
-              <div className="flex items-center justify-between mb-6">
+            <Card className="p-5 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <h3 className="text-lg font-semibold text-gray-900">Personal Information</h3>
                 <Button
                   variant={isEditing ? "primary" : "outline"}
@@ -147,11 +147,11 @@ export const Profile: React.FC = () => {
             </Card>
 
             {/* Account Settings */}
-            <Card className="p-6">
+            <Card className="p-5 sm:p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-6">Account Settings</h3>
               
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
                     <h4 className="font-medium text-gray-900">Email Notifications</h4>
                     <p className="text-sm text-gray-500">Receive emails about new messages and matches</p>
@@ -162,7 +162,7 @@ export const Profile: React.FC = () => {
                   </label>
                 </div>
 
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
                     <h4 className="font-medium text-gray-900">Profile Visibility</h4>
                     <p className="text-sm text-gray-500">Make your profile visible to other users</p>
@@ -173,7 +173,7 @@ export const Profile: React.FC = () => {
                   </label>
                 </div>
 
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
                     <h4 className="font-medium text-gray-900">Two-Factor Authentication</h4>
                     <p className="text-sm text-gray-500">Add an extra layer of security to your account</p>
@@ -186,11 +186,11 @@ export const Profile: React.FC = () => {
             </Card>
 
             {/* Danger Zone */}
-            <Card className="p-6 border-red-200">
+            <Card className="p-5 sm:p-6 border-red-200">
               <h3 className="text-lg font-semibold text-red-600 mb-6">Danger Zone</h3>
               
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
                     <h4 className="font-medium text-gray-900">Delete Account</h4>
                     <p className="text-sm text-gray-500">Permanently delete your account and all data</p>
